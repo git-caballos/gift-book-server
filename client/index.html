@@ -3,7 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>电子礼簿系统 - 专业版</title>
+    <title>电子礼簿系统</title>
+    <!-- 运行时配置（API 后端地址），须最先加载 -->
+    <script src="./static/config.js"></script>
     <script src="./static/tailwindcss.js"></script>
     <script src="./static/xlsx.full.min.js"></script>
     <script src="./static/crypto-js.min.js"></script>
@@ -17,7 +19,7 @@
     <link rel="preload" href="./static/cover1.jpg" as="image" type="image/jpeg" />
     <link rel="preload" href="./static/cover2.jpg" as="image" type="image/jpeg" />
     <style>
-      /* ==================== 字体定义 ==================== */
+      /* 字体定义 */
       @font-face {
         font-family: "Source Han Serif CN Heavy";
         src: url("./static/SourceHanSerifCN-Heavy.ttf") format("truetype");
@@ -26,7 +28,7 @@
         font-display: swap;
       }
 
-      /* ==================== 主题变量 ==================== */
+      /* 主题变量 */
       :root,
       .theme-festive {
         --primary-color: #c00;
@@ -81,12 +83,12 @@
         --type-color: var(--custom-type-color, #374151);
       }
 
-      /* ==================== 基础样式 ==================== */
+      /* 基础样式 */
       body {
         font-family: "Inter", "Microsoft YaHei", sans-serif;
       }
 
-      /* ==================== 礼簿样式 (屏幕显示) ==================== */
+      /* 礼簿样式 (屏幕显示) */
       .gift-book-frame {
         border: 4px solid var(--primary-color);
         padding: 22px;
@@ -220,7 +222,7 @@
         writing-mode: lr;
       }
 
-      /* ==================== 主题组件 ==================== */
+      /* 主题组件 */
       .themed-edit-area {
         background-color: var(--primary-bg-light);
         border: 1px solid var(--primary-border-color);
@@ -293,7 +295,7 @@
         color: var(--primary-text-color);
       }
 
-      /* ==================== 弹窗和打印容器 ==================== */
+      /* 弹窗和打印容器 */
       #modal {
         display: flex;
         flex-direction: column;
@@ -336,7 +338,7 @@
       #print-view {
         visibility: hidden;
       }
-      /* ==================== 缩放样式 ==================== */
+      /* 缩放样式 */
       .amount-chinese.scale,
       .name.scale {
         font-size: 14pt;
@@ -347,7 +349,7 @@
         letter-spacing: 0.5px;
         writing-mode: vertical-rl;
       }
-      /* ==================== 响应式 ==================== */
+      /* 响应式 */
       @media (max-width: 700px) {
         .amount-numeric,
         .mark {
@@ -360,7 +362,7 @@
         }
       }
 
-      /* ==================== 打印样式 ==================== */
+      /* 打印样式 */
       @media print {
         :root {
           /* 打印物理尺寸设置 */
@@ -398,7 +400,7 @@
           height: 100%;
         }
 
-        /* --- 容器与背景 --- */
+        /* 容器与背景 */
 
         /* 外框：统一使用主题色 */
         .gift-book-frame {
@@ -423,7 +425,7 @@
           print-color-adjust: exact;
         }
 
-        /* --- 封面页 --- */
+        /* 封面页 */
         .print-cover-page {
           padding: 0;
           background: none;
@@ -453,7 +455,7 @@
           letter-spacing: 4px;
         }
 
-        /* --- 礼簿表格核心样式 --- */
+        /* 礼簿表格核心样式 */
 
         .book-cell {
           font-size: 18pt !important;
@@ -497,7 +499,7 @@
           overflow: hidden !important;
         }
 
-        /* --- 页头与页脚 --- */
+        /* 页头与页脚 */
 
         .print-header {
           text-align: center;
@@ -538,7 +540,7 @@
           text-align: center;
         }
 
-        /* --- 附录表格样式 --- */
+        /* 附录表格样式 */
 
         .print-appendix-table {
           width: 90%;
@@ -588,6 +590,20 @@
       <!-- 设置界面 -->
       <div id="setup-screen" class="bg-white p-8 rounded-lg shadow-xl max-w-2xl mx-auto hidden">
         <h1 class="text-3xl font-bold text-center themed-header mb-6">电子礼簿系统</h1>
+        <!-- 账号登录/注册区 -->
+        <div id="auth-section" class="mb-8 hidden">
+          <div id="auth-login-panel">
+            <div class="flex flex-col gap-3">
+              <input type="text" id="auth-account" placeholder="账号" autocomplete="username" class="w-full p-3 border rounded-lg focus:ring-2 themed-ring" />
+              <input type="text" id="auth-nickname" placeholder="用户名（可留空，默认同账号）" autocomplete="nickname" class="w-full p-3 border rounded-lg focus:ring-2 themed-ring hidden" />
+              <input type="password" id="auth-password" placeholder="密码" autocomplete="current-password" class="w-full p-3 border rounded-lg focus:ring-2 themed-ring" />
+              <input type="password" id="auth-password-confirm" placeholder="确认密码" autocomplete="new-password" class="w-full p-3 border rounded-lg focus:ring-2 themed-ring hidden" />
+              <button id="auth-login-btn" class="w-full themed-button-primary p-3 rounded-lg transition duration-300">登录</button>
+              <button id="auth-register-btn" class="w-full themed-button-primary p-3 rounded-lg transition duration-300 hidden">注册</button>
+            </div>
+            <p id="auth-mode-toggle" class="text-xs text-gray-500 mt-3 text-right hidden">没有账号？点击<span id="auth-switch-to-register" class="text-blue-600 cursor-pointer select-none">「注册新账号」</span>创建账号后即可使用。</p>
+          </div>
+        </div>
         <div id="select-event-section" class="mb-8 hidden">
           <h2 class="text-xl font-semibold mb-4 border-b pb-2">选择事项</h2>
           <div class="flex items-center space-x-4">
@@ -597,7 +613,7 @@
             <button id="unlock-event-btn" class="themed-button-primary px-6 py-3 rounded-lg transition duration-300">进入</button>
           </div>
         </div>
-        <div>
+        <div id="create-event-section">
           <h2 class="text-xl font-semibold mb-4 border-b pb-2"><span id="or-text">或 </span>创建新事项</h2>
           <form id="create-event-form" class="space-y-4">
             <input type="text" id="event-name" placeholder="事项名称 (例如: 张三李四新婚之喜)" required class="w-full p-3 border rounded-lg focus:ring-2 themed-ring" />
@@ -617,7 +633,6 @@
                 </div>
               </div>
             </div>
-            <input type="text" id="admin-password" placeholder="设置管理密码 (请牢记)" required class="w-full p-3 border rounded-lg focus:ring-2 themed-ring" />
 
             <details class="group">
               <summary class="cursor-pointer text-sm font-medium text-gray-600 group-hover:text-gray-900 list-none">
@@ -677,6 +692,16 @@
             <form id="add-gift-form" class="space-y-4">
               <input type="text" id="guest-name" placeholder="姓名" required class="w-full p-3 border rounded-lg focus:ring-2 themed-ring" />
               <input type="number" id="gift-amount" placeholder="金额 (元)" required min="0" max="999999999999" step="0.01" class="w-full p-3 border rounded-lg focus:ring-2 themed-ring" />
+              <div class="flex flex-wrap items-center gap-x-1 gap-y-2">
+                <label class="text-sm font-medium text-gray-700 whitespace-nowrap">快捷金额：</label>
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" class="amount-preset-btn themed-button-secondary px-3 py-1.5 text-xs border rounded-lg" data-amount="100">100</button>
+                  <button type="button" class="amount-preset-btn themed-button-secondary px-3 py-1.5 text-xs border rounded-lg" data-amount="200">200</button>
+                  <button type="button" class="amount-preset-btn themed-button-secondary px-3 py-1.5 text-xs border rounded-lg" data-amount="500">500</button>
+                  <button type="button" class="amount-preset-btn themed-button-secondary px-3 py-1.5 text-xs border rounded-lg" data-amount="800">800</button>
+                  <button type="button" class="amount-preset-btn themed-button-secondary px-3 py-1.5 text-xs border rounded-lg" data-amount="1000">1000</button>
+                </div>
+              </div>
               <div class="flex flex-wrap items-center gap-x-2 gap-y-2">
                 <label class="text-sm font-medium text-gray-700 whitespace-nowrap">收款类型：</label>
                 <div class="flex flex-wrap gap-x-3 gap-y-2">
@@ -747,14 +772,38 @@
         </div>
       </div>
     </div>
-    <div class="absolute lg:fixed top-5 right-5 flex gap-3 z-40">
-      <button id="support-btn" class="bg-white/80 backdrop-blur rounded-full p-2 shadow-sm hover:shadow-md transition-all group" title="联系/支持作者">
-        <i class="ri-heart-3-line text-2xl text-red-500 group-hover:scale-110 transition-transform block"></i>
+    <div class="absolute lg:fixed top-5 right-5 flex items-center gap-3 z-40">
+      <button id="support-btn" class="w-10 h-10 bg-white/80 backdrop-blur rounded-full shadow-sm hover:shadow-md transition-all group flex items-center justify-center" title="联系/支持作者">
+        <svg class="w-5 h-5 themed-text transition-transform group-hover:scale-110" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
       </button>
 
-      <button id="fullscreen-btn" class="bg-white/80 backdrop-blur rounded-full p-2 shadow-sm hover:shadow-md transition-all" title="全屏/退出全屏">
-        <i id="fullscreen-icon" class="ri-fullscreen-line text-2xl themed-text themed-dropdown-text"></i>
+      <button id="fullscreen-btn" class="w-10 h-10 bg-white/80 backdrop-blur rounded-full shadow-sm hover:shadow-md transition-all flex items-center justify-center" title="全屏/退出全屏">
+        <i id="fullscreen-icon" class="ri-fullscreen-line text-xl themed-text themed-dropdown-text"></i>
       </button>
+
+      <!-- 用户头像下拉菜单（登录后显示，位于最右侧） -->
+      <div id="user-avatar-wrap" class="relative hidden">
+        <button id="user-avatar-btn" class="w-10 h-10 rounded-full themed-button-primary flex items-center justify-center text-white font-bold shadow-sm hover:shadow-md transition-all" title="用户菜单">
+          <span id="user-avatar-letter" class="text-lg leading-none"></span>
+        </button>
+        <div id="user-avatar-menu" class="hidden absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
+          <div class="px-4 py-2 border-b border-gray-100">
+            <div id="avatar-menu-name" class="text-sm font-semibold text-gray-800 truncate"></div>
+          </div>
+          <button id="user-menu-profile" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition flex items-center gap-2">
+            <i class="ri-user-line text-base"></i> 查看信息
+          </button>
+          <button id="user-menu-password" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition flex items-center gap-2">
+            <i class="ri-lock-line text-base"></i> 修改密码
+          </button>
+          <div class="border-t border-gray-100 my-1"></div>
+          <button id="user-menu-logout" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition flex items-center gap-2">
+            <i class="ri-logout-box-line text-base"></i> 退出登录
+          </button>
+        </div>
+      </div>
     </div>
     <!-- 模态框 -->
     <div id="modal-container" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
@@ -769,45 +818,29 @@
     </div>
 
     <script type="module">
-      /**
-       * 应用配置常量
-       * 集中管理所有全局配置参数，便于统一维护和调整
-       */
+      /** 应用配置常量 */
       const CONFIG = {
-        /**
-         * 每页显示的礼金记录数量
-         * 影响：
-         * - 主界面礼簿显示
-         * - 打印PDF每页容量
-         * - 分页导航计算
-         */
+        /** 每页显示的礼金记录数量（影响列表、打印每页容量与分页计算） */
         ITEMS_PER_PAGE: 12,
 
-        /**
-         * 礼簿封面图最大文件大小（2MB）
-         * 超过此大小的图片将被拒绝上传
-         * 原因：避免 IndexedDB 存储压力和打印性能问题
-         */
+        /** 封面图最大文件大小（2MB），超出拒绝上传 */
         MAX_COVER_SIZE: 2 * 1024 * 1024,
 
-        /**
-         * 打印分批阈值（1008 条记录 = 84 页）
-         * 超过此数量将启用分批打印模式
-         * 原因：
-         * - 防止浏览器渲染大量 DOM 导致卡死
-         * - 避免内存溢出
-         * - 提高打印成功率
-         * 同时用于 GridJS 表格分页判断
-         */
+        /** 打印分批阈值（1008 条 = 84 页），超出启用分批打印，防止渲染卡死；同时用于 GridJS 分页判断 */
         PRINT_SPLIT_THRESHOLD: 1008,
-        APP_NAME: "电子礼簿系统 - 专业版",
-        DB_NAME: "GiftRegistryDB",
-        DB_VERSION: 1,
+        APP_NAME: "电子礼簿系统",
+        /**
+         * 后端 API 地址
+         * 读取 static/config.js 中的 API_BASE_URL（部署时手动配置）：
+         * - 留空 ""：同源部署，请求发往当前域名
+         * - 完整地址：前后端分离部署（独立端口/子域名/CDN）
+         */
+        API_BASE_URL: ((window.__APP_CONFIG__ && window.__APP_CONFIG__.API_BASE_URL) || "").replace(/\/+$/, ""),
         /**
          * 宾客等级系统配置
          * 使用数组存储等级名称，索引即为等级权重（用于排序）
          * 索引越大，等级越高，在打印/导出时排名越靠前
-         * 索引范围：0-4
+         * 索引范围：0-100（共 101 级：普宾 + 排序 100~1）
          */
         GUEST_LEVELS: ["普宾", ...Array.from({ length: 100 }, (_, index) => `排序${100 - index}`)],
         PASSWORD_CACHE_DURATION: 5,
@@ -818,7 +851,7 @@
         printEndPage: true,
         printAppendix: true,
         printSummary: true,
-        printAbolished: true,
+        printAbolished: true, // 预留选项：打印/PDF 导出固定过滤作废记录，此开关暂未启用
         showCoverTitle: true,
         pdfEngine: "browser",
       });
@@ -883,22 +916,6 @@
         }
 
         /**
-         * 将文件读取为 Base64 编码字符串
-         * @param {File} file - 要读取的文件对象
-         * @returns {Promise<string>} Base64 编码的数据 URL（包含 data:image/...;base64, 前缀）
-         * @throws {Error} 文件读取失败时抛出错误
-         * 用途：将礼簿封面图存储到 IndexedDB
-         */
-        static async readFileAsBase64(file) {
-          return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-          });
-        }
-
-        /**
          * 获取当前日期时间的格式化字符串
          * @returns {{date: string, time: string}} 包含 date 和 time 的对象
          * @example
@@ -914,8 +931,6 @@
           return { date, time };
         }
 
-        /**
-         */
         static getEventDateInfo(dateInput) {
           const date = new Date(dateInput);
           if (Number.isNaN(date.getTime())) {
@@ -940,10 +955,17 @@
         }
 
         /**
-         * @returns {boolean}
+         * HTML 转义工具：防止用户输入（姓名、备注、搜索词等）注入 HTML
+         * 所有把用户可控文本拼进 innerHTML 的位置都应使用本方法
+         * @param {*} value - 要转义的文本
+         * @returns {string} 转义后的安全字符串
          */
+        static escapeHtml(value) {
+          return String(value ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+        }
+
+        /** @returns {boolean} */
         static isMobile() {
-          // 一个通用且可靠的移动设备检测方法
           return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
         }
       }
@@ -992,186 +1014,65 @@
       }
 
       /**
-       * 数据库管理器 - IndexedDB 封装
-       * 提供对浏览器本地数据库的统一操作接口
-       * 存储结构：
-       *   - events: 事项信息（包含名称、时间、密码哈希、主题等）
-       *   - gifts: 礼金记录（包含加密数据和关联的事项ID）
+       * API 客户端 - 封装对 Node.js 后端的 HTTP 请求
+       * 统一处理：JWT 认证头、JSON 序列化、401 未授权、错误解析
        */
-      class DBManager {
-        /**
-         */
+      class ApiClient {
         constructor() {
-          this.db = null; // IndexedDB 数据库连接对象
+          this.token = null;
+          this.onUnauthorized = null; // 401 回调（用于强制退出登录）
+        }
+
+        setToken(token) {
+          this.token = token || null;
+        }
+
+        clearToken() {
+          this.token = null;
         }
 
         /**
-         * 初始化数据库 - 打开或创建 IndexedDB 数据库
-         * @returns {Promise<void>} 初始化完成后 resolve
+         * 发起请求
+         * @param {string} method - HTTP 方法 (GET/POST/PUT/DELETE)
+         * @param {string} path - 接口路径（含 /api 前缀）
+         * @param {object} body - 请求体（可选）
+         * @returns {Promise<any>} 解析后的 JSON 响应
          */
-        async init() {
-          return new Promise((resolve, reject) => {
-            const request = indexedDB.open(CONFIG.DB_NAME, CONFIG.DB_VERSION);
+        async request(method, path, body) {
+          const headers = { "Content-Type": "application/json" };
+          if (this.token) headers["Authorization"] = `Bearer ${this.token}`;
 
-            request.onerror = () => reject(request.error);
+          let res;
+          try {
+            res = await fetch(`${CONFIG.API_BASE_URL}${path}`, {
+              method,
+              headers,
+              body: body !== undefined ? JSON.stringify(body) : undefined,
+            });
+          } catch (error) {
+            throw new Error("无法连接到服务器，请确认后端服务已启动。");
+          }
 
-            request.onsuccess = () => {
-              this.db = request.result;
-              // 初始化成功后，直接 resolve 即可，无需返回任何信息
-              resolve();
-            };
+          if (res.status === 401 && !path.endsWith("/login")) {
+            if (this.onUnauthorized) this.onUnauthorized();
+            throw new Error("登录已过期，请重新登录。");
+          }
 
-            // 数据库升级事件 - 仅在首次创建数据库时触发
-            request.onupgradeneeded = (event) => {
-              const db = event.target.result;
-              console.log("首次创建数据库，版本:", db.version);
+          let data = null;
+          try {
+            data = await res.json();
+          } catch (error) {
+            data = null;
+          }
 
-              // 1. 创建 events 表
-              if (!db.objectStoreNames.contains("events")) {
-                db.createObjectStore("events", { keyPath: "id", autoIncrement: true });
-              }
-
-              // 2. 创建 gifts 表并建立所有需要的索引
-              if (!db.objectStoreNames.contains("gifts")) {
-                const giftStore = db.createObjectStore("gifts", { keyPath: "id", autoIncrement: true });
-                giftStore.createIndex("eventId", "eventId", { unique: false });
-                giftStore.createIndex("byEventAndLevel", ["eventId", "guestLevelWeight", "levelUpdateTime", "id"], { unique: false });
-              }
-            };
-          });
-        }
-
-        /**
-         * 根据复合索引进行排序查询
-         * @param {string} storeName 表名
-         * @param {string} indexName 索引名
-         * @param {*} key1 复合索引的第一个键 (eventId)
-         * @returns {Promise<Array>} 排序后的结果数组
-         *
-         * 排序逻辆（由 IndexedDB 索引自动完成）:
-         * 1. 按 guestLevelWeight 降序 (等级高的在前)
-         * 2. 相同等级内按 levelUpdateTime 降序 (修改过等级的在前，0 排在后)
-         * 3. levelUpdateTime 相同时按 id 升序 (录入顺序)
-         *
-         * 注意：为了实现降序，需要在内存中进行排序，因为 IndexedDB 索引只支持升序
-         */
-        async getAllByCompoundIndex(storeName, indexName, key1) {
-          const transaction = this.db.transaction(storeName, "readonly");
-          const store = transaction.objectStore(storeName);
-          const index = store.index(indexName);
-
-          return new Promise((resolve, reject) => {
-            const results = [];
-            // 使用游标遍历，只获取匹配 eventId 的记录
-            const range = IDBKeyRange.bound([key1, -Infinity, -Infinity, -Infinity], [key1, Infinity, Infinity, Infinity]);
-
-            const request = index.openCursor(range);
-
-            request.onsuccess = (event) => {
-              const cursor = event.target.result;
-              if (cursor) {
-                results.push(cursor.value);
-                cursor.continue();
-              } else {
-                // 排序：等级降序 -> levelUpdateTime 降序 -> id 升序
-                // 注意：这里必须排序，因为 IndexedDB 索引只能升序，我们需要降序
-                results.sort((a, b) => {
-                  const weightDiff = (b.guestLevelWeight || 0) - (a.guestLevelWeight || 0);
-                  if (weightDiff !== 0) return weightDiff;
-
-                  // levelUpdateTime 降序（0 排在最后）
-                  const aTime = a.levelUpdateTime || 0;
-                  const bTime = b.levelUpdateTime || 0;
-                  const timeDiff = bTime - aTime;
-                  if (timeDiff !== 0) return timeDiff;
-
-                  // id 升序（录入顺序）
-                  return (a.id || 0) - (b.id || 0);
-                });
-                resolve(results);
-              }
-            };
-
-            request.onerror = () => reject(request.error);
-          });
-        }
-        /**
-         */
-        async add(storeName, data) {
-          const transaction = this.db.transaction(storeName, "readwrite");
-          const store = transaction.objectStore(storeName);
-          return new Promise((resolve, reject) => {
-            const request = store.add(data);
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-          });
-        }
-
-        /**
-         */
-        async get(storeName, key) {
-          const transaction = this.db.transaction(storeName, "readonly");
-          const store = transaction.objectStore(storeName);
-          return new Promise((resolve, reject) => {
-            const request = store.get(key);
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-          });
-        }
-
-        /**
-         */
-        async getAll(storeName) {
-          const transaction = this.db.transaction(storeName, "readonly");
-          const store = transaction.objectStore(storeName);
-          return new Promise((resolve, reject) => {
-            const request = store.getAll();
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-          });
-        }
-
-        /**
-         */
-        async getAllByIndex(storeName, indexName, value) {
-          const transaction = this.db.transaction(storeName, "readonly");
-          const store = transaction.objectStore(storeName);
-          const index = store.index(indexName);
-          return new Promise((resolve, reject) => {
-            const request = index.getAll(value);
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-          });
-        }
-
-        /**
-         */
-        async update(storeName, data) {
-          const transaction = this.db.transaction(storeName, "readwrite");
-          const store = transaction.objectStore(storeName);
-          return new Promise((resolve, reject) => {
-            const request = store.put(data);
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-          });
-        }
-
-        /**
-         */
-        async delete(storeName, key) {
-          const transaction = this.db.transaction(storeName, "readwrite");
-          const store = transaction.objectStore(storeName);
-          return new Promise((resolve, reject) => {
-            const request = store.delete(key);
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-          });
+          if (!res.ok) {
+            throw new Error(data?.error || `请求失败 (${res.status})`);
+          }
+          return data;
         }
       }
 
-      /**
-       * UI管理器 - DOM操作封装
-       */
+      /** UI管理器 - DOM操作封装 */
       class UIManager {
         constructor() {
           this.elements = this.cacheElements();
@@ -1217,7 +1118,6 @@
             startTimeInput: $("start-time"),
             endDateInput: $("end-date"),
             endTimeInput: $("end-time"),
-            adminPasswordInput: $("admin-password"),
             eventThemeSelect: $("event-theme"),
             eventVoiceSelect: $("event-voice"),
             previewCreateVoiceBtn: $("preview-create-voice-btn"),
@@ -1282,19 +1182,15 @@
           if (primaryButton) setTimeout(() => primaryButton.focus(), 10);
         }
 
-        /**
-         */
         closeModal() {
           this.elements.modalContainer.classList.add("hidden");
           this.elements.modal.classList.remove("modal-large");
           document.body.style.overflow = "auto";
         }
 
-        /**
-         */
         showNotification(message, type = "info") {
           const notification = document.createElement("div");
-          notification.className = "fixed top-5 right-5 flex items-center px-4 py-3 rounded-lg shadow-xl text-white z-[100] transition-all duration-500 ease-in-out opacity-0 -translate-y-full";
+          notification.className = "fixed top-5 left-1/2 -translate-x-1/2 flex items-center px-4 py-3 rounded-lg shadow-xl text-white z-[100] transition-all duration-500 ease-in-out opacity-0 -translate-y-full";
 
           const styles = {
             info: { icon: "ri-information-line", bg: "bg-blue-600" },
@@ -1304,7 +1200,7 @@
 
           const style = styles[type] || styles.info;
           notification.classList.add(style.bg);
-          notification.innerHTML = `<i class="${style.icon} text-xl mr-1"></i><span>${message}</span>`;
+          notification.innerHTML = `<i class="${style.icon} text-xl mr-1"></i><span>${Utils.escapeHtml(message)}</span>`;
 
           document.body.appendChild(notification);
           setTimeout(() => notification.classList.remove("opacity-0", "-translate-y-full"), 10);
@@ -1315,81 +1211,75 @@
           }, 3000);
         }
 
-        /**
-         */
         applyTheme(theme) {
           document.body.className = `bg-gray-100 flex items-center justify-center min-h-screen ${theme || "theme-festive"}`;
         }
       }
 
       /**
-       * 数据网关 - 封装 DBManager 的业务级访问接口
+       * 数据网关 - 封装对后端 HTTP API 的业务级访问接口
+       * 排序语义与服务端一致：等级降序 → levelUpdateTime 降序 → id 升序
        */
       class GiftRepository {
-        /**
-         */
-        constructor(database) {
-          this.database = database;
+        /** @param {ApiClient} api - API 客户端实例 */
+        constructor(api) {
+          this.api = api;
         }
 
-        /**
-         */
         async fetchAllEvents() {
-          return this.database.getAll("events");
+          return this.api.request("GET", "/api/events");
         }
 
-        /**
-         */
         async fetchEvent(eventId) {
-          return this.database.get("events", eventId);
+          return this.api.request("GET", `/api/events/${eventId}`);
         }
 
-        /**
-         */
+        /** 创建事项，返回包含 id 的完整事项对象 */
         async createEvent(event) {
-          return this.database.add("events", event);
+          return this.api.request("POST", "/api/events", event);
         }
 
-        /**
-         */
         async updateEvent(event) {
-          return this.database.update("events", event);
+          return this.api.request("PUT", `/api/events/${event.id}`, event);
         }
 
-        /**
-         */
+        /** 标记"已提醒导出数据" */
+        async markExportReminded(eventId) {
+          return this.api.request("PUT", `/api/events/${eventId}/export-reminded`);
+        }
+
         async deleteEvent(eventId) {
-          return this.database.delete("events", eventId);
+          return this.api.request("DELETE", `/api/events/${eventId}`);
         }
 
-        /**
-         */
+        /** 获取事项下所有礼金（密文），按等级排序 */
         async fetchOrderedGifts(eventId) {
-          return this.database.getAllByCompoundIndex("gifts", "byEventAndLevel", eventId);
+          return this.api.request("GET", `/api/events/${eventId}/gifts`);
         }
 
-        /**
-         */
         async fetchGiftsByEvent(eventId) {
-          return this.database.getAllByIndex("gifts", "eventId", eventId);
+          return this.api.request("GET", `/api/events/${eventId}/gifts`);
         }
 
-        /**
-         */
+        /** 新增礼金（gift.encryptedData 为客户端加密密文） */
         async createGift(gift) {
-          return this.database.add("gifts", gift);
+          return this.api.request("POST", `/api/events/${gift.eventId}/gifts`, {
+            encryptedData: gift.encryptedData,
+            guestLevelWeight: gift.guestLevelWeight ?? 0,
+            levelUpdateTime: gift.levelUpdateTime ?? 0,
+          });
         }
 
-        /**
-         */
         async updateGift(gift) {
-          return this.database.update("gifts", gift);
+          return this.api.request("PUT", `/api/events/${gift.eventId}/gifts/${gift.id}`, {
+            encryptedData: gift.encryptedData,
+            guestLevelWeight: gift.guestLevelWeight ?? 0,
+            levelUpdateTime: gift.levelUpdateTime ?? 0,
+          });
         }
 
-        /**
-         */
-        async deleteGift(giftId) {
-          return this.database.delete("gifts", giftId);
+        async deleteGift(giftId, eventId) {
+          return this.api.request("DELETE", `/api/events/${eventId}/gifts/${giftId}`);
         }
       }
 
@@ -1399,17 +1289,33 @@
          */
         constructor(storageKey = "activeEventSession") {
           this.storageKey = storageKey;
+          this.auth = null; // { token, user, accountPasswordHash }
         }
 
         /**
+         * 记录当前登录账号信息，保存会话时自动写入
+         * @param {object|null} auth - { token, user, accountPasswordHash }，传 null 清除
          */
+        setAuth(auth) {
+          this.auth = auth || null;
+        }
+
+        /** 保存会话：登录信息 + 账号密码密文（event 可为空，空时仅保存登录状态） */
         save(event, password) {
-          const encryptedPassword = CryptoJS.AES.encrypt(password, event.passwordHash).toString();
-          sessionStorage.setItem(this.storageKey, JSON.stringify({ event, encryptedPassword }));
+          const payload = {};
+          if (event) payload.event = event;
+          if (this.auth) {
+            payload.token = this.auth.token;
+            payload.user = this.auth.user;
+            payload.accountPasswordHash = this.auth.accountPasswordHash;
+          }
+          // 用账号密码哈希加密明文密码，用于刷新后还原加解密密钥
+          if (password && payload.accountPasswordHash) {
+            payload.encryptedPassword = CryptoJS.AES.encrypt(password, payload.accountPasswordHash).toString();
+          }
+          sessionStorage.setItem(this.storageKey, JSON.stringify(payload));
         }
 
-        /**
-         */
         load() {
           const stored = sessionStorage.getItem(this.storageKey);
           if (!stored) return null;
@@ -1423,46 +1329,40 @@
         }
 
         /**
+         * 仅清除当前事项会话，保留登录信息（token / 用户 / 加密密钥）
+         * 除退出登录外，任何操作（返回首页、删除事项、切换事项）都不应退出登录态
          */
         clear() {
+          const payload = this.load();
+          if (!payload) return;
+          const kept = {};
+          if (payload.token) kept.token = payload.token;
+          if (payload.user) kept.user = payload.user;
+          if (payload.accountPasswordHash) kept.accountPasswordHash = payload.accountPasswordHash;
+          if (payload.encryptedPassword) kept.encryptedPassword = payload.encryptedPassword;
+          if (Object.keys(kept).length) {
+            sessionStorage.setItem(this.storageKey, JSON.stringify(kept));
+          } else {
+            sessionStorage.removeItem(this.storageKey);
+          }
+        }
+
+        /** 清空整个会话（仅退出登录时使用） */
+        destroy() {
           sessionStorage.removeItem(this.storageKey);
-        }
-
-        /**
-         */
-        _notificationKey(eventId) {
-          return `eventEndedNotif_${eventId}`;
-        }
-
-        /**
-         */
-        hasNotification(eventId) {
-          return !!sessionStorage.getItem(this._notificationKey(eventId));
-        }
-
-        /**
-         */
-        markNotification(eventId) {
-          sessionStorage.setItem(this._notificationKey(eventId), "true");
         }
       }
 
       class PasswordCache {
-        /**
-         */
         constructor(durationMinutes) {
           this.durationMinutes = durationMinutes;
           this.storagePrefix = "adminPwdCache_";
         }
 
-        /**
-         */
         _key(eventId) {
           return `${this.storagePrefix}${eventId}`;
         }
 
-        /**
-         */
         store(eventId, password, passwordHash) {
           try {
             const encrypted = CryptoJS.AES.encrypt(password, passwordHash).toString();
@@ -1473,8 +1373,6 @@
           }
         }
 
-        /**
-         */
         retrieve(eventId, passwordHash) {
           try {
             const cached = localStorage.getItem(this._key(eventId));
@@ -1492,10 +1390,18 @@
           }
         }
 
-        /**
-         */
         clear(eventId) {
           localStorage.removeItem(this._key(eventId));
+        }
+
+        /** 清除该账号在本机缓存的所有密码条目（令牌失效强制登出时调用） */
+        clearAll() {
+          for (let i = localStorage.length - 1; i >= 0; i--) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith(this.storagePrefix)) {
+              localStorage.removeItem(key);
+            }
+          }
         }
       }
 
@@ -1532,15 +1438,13 @@
       }
 
       class GiftManager {
-        /**
-         */
         constructor(app) {
           this.app = app;
         }
 
         /**
          * 构造写回数据库所需的礼金记录对象
-         * 仅保留索引字段与密文，避免将解密数据写入 IndexedDB
+         * 仅保留索引字段与密文；明文只在浏览器端解密，服务端仅存密文
          */
         buildGiftRecordForUpdate(giftObject, overrides = {}) {
           if (!giftObject) return { ...overrides };
@@ -1554,8 +1458,6 @@
           };
         }
 
-        /**
-         */
         generateGiftCellHTML(gift, giftIndex) {
           const app = this.app;
           const g = gift.data;
@@ -1574,11 +1476,11 @@
           const amountClasses = isAbolished ? "opacity-50 line-through" : "";
 
           const amountChinese = Utils.amountToChinese(g.amount);
-          const displayName = g.name.length === 2 ? `${g.name[0]}\u3000${g.name[1]}` : g.name;
+          const displayName = Utils.escapeHtml(g.name.length === 2 ? `${g.name[0]}\u3000${g.name[1]}` : g.name);
           return {
             nameHTML: `<div class="name ${g.name.length > 4 ? "scale" : ""} ${nameClasses}">${displayName}</div>${statusIndicators}`,
             amountHTML: `<div class="amount-chinese ${amountChinese.length > 16 ? "scale" : ""} ${amountClasses}">${amountChinese}</div>
-                      <div class="amount-numeric ${Math.abs(g.amount).toString().length > 8 ? "scale" : ""} ${amountClasses}">￥${g.amount}</div>`,
+                      <div class="amount-numeric ${Math.abs(g.amount).toString().length > 8 ? "scale" : ""} ${amountClasses}">￥${Utils.escapeHtml(g.amount)}</div>`,
             giftIndex,
           };
         }
@@ -1691,12 +1593,28 @@
               const decryptedData = CryptoService.decrypt(app.gifts[i].encryptedData, app.currentPassword);
               app.gifts[i].data = decryptedData;
               app.gifts[i]._needsDecrypt = false;
-              app.gifts[i].encryptedData = null; // 释放内存
+              if (decryptedData === null) {
+                // 解密失败（密码不符或数据损坏）：保留密文以便后续重试，并统计失败数
+                app.decryptFailureCount = (app.decryptFailureCount || 0) + 1;
+              } else {
+                app.gifts[i].encryptedData = null; // 释放内存
+              }
               decryptedCount++;
             }
           }
 
           return decryptedCount;
+        }
+
+        /**
+         * 同步解密全部礼金：搜索、导出、重复检测等需要全量数据的操作前调用
+         * 避免懒加载解密期间部分记录 data 为 null 导致漏检
+         */
+        ensureAllGiftsDecrypted() {
+          const app = this.app;
+          if (app.allGiftsDecrypted) return;
+          this.decryptGiftsRange(0, app.gifts.length);
+          app.allGiftsDecrypted = true;
         }
 
         /**
@@ -1706,8 +1624,12 @@
          */
         async loadGiftsForCurrentEvent() {
           const app = this.app;
+          // 代际令牌：快速切换事项时旧请求返回后若令牌不匹配则丢弃，防止旧数据覆盖新事项
+          app.loadToken = (app.loadToken || 0) + 1;
+          const token = app.loadToken;
           app.allGiftsDecrypted = false;
           const encryptedGifts = await app.giftRepository.fetchOrderedGifts(app.currentEvent.id);
+          if (token !== app.loadToken) return; // 期间已切换到其他事项，丢弃过期响应
 
           // 容错处理：确保所有记录都有 guestLevelWeight 和 levelUpdateTime
           app.gifts = encryptedGifts.map((g) => {
@@ -1727,7 +1649,7 @@
           const endTime = new Date(app.currentEvent.endDateTime);
           const isEventEnded = now > endTime;
           app.currentPage = isEventEnded ? 1 : totalPages;
-          if (!this.allGiftsDecrypted) {
+          if (!app.allGiftsDecrypted) {
             // 解密当前页数据
             const pageStart = (app.currentPage - 1) * pageSize;
             const pageEnd = Math.min(pageStart + pageSize, app.gifts.length);
@@ -1752,9 +1674,16 @@
           const app = this.app;
           const BATCH_SIZE = 300;
           let didDecrypt = false;
+          // 记录本次任务对应的礼金数组引用：若事项被切换，app.gifts 会被整体替换，
+          // 旧任务必须立即放弃，否则会把新事项标记为已全部解密（allGiftsDecrypted=true），
+          // 导致新事项的非初始页记录永远不再解密（空白且不可恢复）
+          const giftsRef = app.gifts;
 
-          for (let i = startIndex; i < app.gifts.length; i += BATCH_SIZE) {
-            const batchEnd = Math.min(i + BATCH_SIZE, app.gifts.length);
+          for (let i = startIndex; i < giftsRef.length; i += BATCH_SIZE) {
+            // 事项已切换（数组被替换）：放弃本任务，且不设置 allGiftsDecrypted
+            if (app.gifts !== giftsRef) return;
+
+            const batchEnd = Math.min(i + BATCH_SIZE, giftsRef.length);
 
             // 使用统一的解密方法
             const decryptedCount = app.giftManager.decryptGiftsRange(i, batchEnd);
@@ -1771,11 +1700,14 @@
               }
             });
 
+            // 等待期间可能已切换事项
+            if (app.gifts !== giftsRef) return;
+
             // 更新缓存和 UI
             if (didDecrypt) {
               app.giftManager.rebuildCache();
               app.giftManager.updateTotals();
-              didDecrypt = false; // 重置标志
+              didDecrypt = false;
             }
           }
           app.allGiftsDecrypted = true; // 标记所有数据已解密
@@ -1801,7 +1733,7 @@
           const pageSize = app.getItemsPerPage();
           const items = app.gifts.slice((app.currentPage - 1) * pageSize, app.currentPage * pageSize);
           app.ui.elements.giftBookContent.innerHTML = "";
-          app.ui.elements.giftBookContent.appendChild(app.exportService.createGiftBookRows(items, false, pageSize));
+          app.ui.elements.giftBookContent.appendChild(app.exportService.createGiftBookRows(items, false));
         }
 
         /**
@@ -1823,8 +1755,6 @@
           app.ui.elements.totalGiversEl.textContent = app.totalGiversCache;
         }
 
-        /**
-         */
         updatePageInfo() {
           const app = this.app;
           const totalPages = Math.ceil(app.gifts.length / app.getItemsPerPage()) || 1;
@@ -1869,7 +1799,7 @@
           const end = Math.min(start + app.getItemsPerPage(), app.gifts.length);
 
           // 使用统一的解密方法
-          !this.allGiftsDecrypted && app.giftManager.decryptGiftsRange(start, end);
+          !app.allGiftsDecrypted && app.giftManager.decryptGiftsRange(start, end);
         }
 
         /**
@@ -1929,7 +1859,7 @@
         /**
          * 执行礼金数据更新的统一入口
          * - 兼容姓名纠错、金额调整、备注更新等场景
-         * - 在提交前处理管理员密码核验与历史记录快照
+         * - 在提交前处理账号密码核验与历史记录快照
          * - 成功后同步更新本地缓存、统计信息与界面
          */
         async performUpdate(giftIndex, newFields, changeLogText, updateType) {
@@ -1940,15 +1870,15 @@
           const currentData = { ...giftObject.data };
           const changedFieldKeys = Object.keys(newFields || {}).filter((key) => Object.prototype.hasOwnProperty.call(currentData, key) && currentData[key] !== newFields[key]);
 
-          // 根据变更类型判断是否需要管理员密码（纠错强制验证）
+          // 根据变更类型判断是否需要账号密码（纠错强制验证）
           let password = null;
           if (updateType === "correction") {
             const forceVerify = changedFieldKeys.includes("name") || changedFieldKeys.includes("amount");
-            password = await app.requestAdminPassword("修改确认", "如要调整礼金信息，请输入管理员密码。", null, forceVerify);
+            password = await app.requestAdminPassword("修改确认", "如要调整礼金信息，请输入账号密码。", null, forceVerify);
           } else if (updateType === "remark") {
             const isOutOfTime = new Date() < new Date(app.currentEvent.startDateTime) || new Date() > new Date(app.currentEvent.endDateTime);
             if (isOutOfTime) {
-              password = await app.requestAdminPassword("备注记录", "当前已超过有效录入时间，请输入管理员密码后继续修改备注。");
+              password = await app.requestAdminPassword("备注记录", "当前已超过有效录入时间，请输入账号密码后继续修改备注。");
             } else {
               password = app.currentPassword; // 在有效时段内，直接使用当前密码
             }
@@ -2005,8 +1935,6 @@
           }
         }
 
-        /**
-         */
         async abolishGift(giftIndex) {
           const app = this.app;
           const gift = app.gifts[giftIndex];
@@ -2054,8 +1982,8 @@
             return;
           }
 
-          // 校验管理员密码
-          const password = await app.requestAdminPassword("作废确认", `即将作废 \"${gift.data.name}\" 的礼金记录。请输入管理密码以继续。`, null, true);
+          // 校验账号密码
+          const password = await app.requestAdminPassword("作废确认", `即将作废 \"${gift.data.name}\" 的礼金记录。请输入账号密码以继续。`, null, true);
 
           if (password === null) return;
 
@@ -2181,10 +2109,19 @@
 
                 const selectedEngine = app.currentEvent.printOptions?.pdfEngine || "browser";
                 const usePdfLib = Utils.isMobile() || selectedEngine === "pdf-lib";
+                let generated = true;
                 if (usePdfLib) {
-                  await app.exportService.generatePdf(start, end, partIndex);
+                  generated = await app.exportService.generatePdf(start, end, partIndex);
                 } else {
                   await app.exportService.executePrint(start, end, partIndex, totalChunks);
+                }
+
+                // 若未真正生成（如已有其他部分正在生成），还原状态，避免误标“已完成”
+                if (!generated) {
+                  el.dataset.status = "";
+                  mainTextSpan.textContent = originalText;
+                  el.classList.remove("cursor-wait");
+                  return;
                 }
 
                 el.dataset.status = "completed";
@@ -2208,7 +2145,7 @@
           const app = this.app;
           if (app.isGeneratingPdf) {
             app.ui.showNotification("正在生成 PDF，请勿重复操作...", "info");
-            return;
+            return false;
           }
 
           const printBtn = app.ui.elements.printBtn;
@@ -2221,7 +2158,7 @@
             printBtn.innerHTML = '<i class="ri-loader-4-line animate-spin mr-2"></i>正在生成...';
             app.ui.showNotification("正在生成 PDF 文件，请稍候...", "info");
 
-            // ====================== 1. 解析自定义配置（统一处理“自定义 or 兜底”） ======================
+            // 1. 解析自定义配置（统一处理“自定义 or 兜底”）
             const customStyle = app.currentEvent.customStyle || {};
             const isSolemnTheme = app.currentEvent.theme === "theme-solemn";
 
@@ -2248,7 +2185,7 @@
 
             const bgImageUrl = (await ImageCache.getBackgroundUrl(app.currentEvent.id)) || "./static/bg.jpg";
 
-            // ====================== 2. 统一加载自定义字体 ======================
+            // 2. 统一加载自定义字体
             const customFontNames = {
               name: resolve.font(customStyle.name?.font),
               label: resolve.font(customStyle.type?.font),
@@ -2294,7 +2231,7 @@
               pageInfo: createBlobUrl(fontBytesMap.pageInfo),
             };
 
-            // ====================== 3. 构造最终 PDF 参数（层级清晰、合并集中） ======================
+            // 3. 构造最终 PDF 参数（层级清晰、合并集中）
             const eventDateInfo = Utils.getEventDateInfo(app.currentEvent.startDateTime);
             const totalParts = app.gifts.length > CONFIG.PRINT_SPLIT_THRESHOLD ? Math.ceil(app.gifts.length / CONFIG.PRINT_SPLIT_THRESHOLD) : null;
 
@@ -2330,8 +2267,11 @@
               coverFontUrl: fontUrls.cover || null,
             };
 
-            // ====================== 4. 生成 PDF ======================
+            // 4. 生成 PDF
             app.pdfGenerator = new GiftRegistryPDF(generatorOptions);
+
+            // 确保该区间数据已解密，避免 data 为 null 时生成 PDF 崩溃
+            !app.allGiftsDecrypted && app.giftManager.decryptGiftsRange(startIndex, endIndex);
 
             const data = app.gifts.slice(startIndex, endIndex).map(({ data }) => ({
               name: data.name,
@@ -2357,21 +2297,21 @@
           } catch (error) {
             console.error(error);
             app.ui.showNotification("生成 PDF 时出现错误，请重试。", "error");
+            return false;
           } finally {
             app.isGeneratingPdf = false;
             printBtn.disabled = false;
             printBtn.innerHTML = originalBtnText;
             blobUrlsToRevoke.forEach((url) => URL.revokeObjectURL(url));
           }
+          return true;
         }
 
-        /**
-         * 执行打印/生成导出 PDF (浏览器原生打印方式)
-         */
+        /** 执行打印/生成导出 PDF (浏览器原生打印方式) */
         executePrint(startIdx, endIdx, partIndex = null, totalParts = null) {
           const app = this.app;
           // 确保数据已解密
-          !this.allGiftsDecrypted && app.giftManager.decryptGiftsRange(startIdx, endIdx);
+          !app.allGiftsDecrypted && app.giftManager.decryptGiftsRange(startIdx, endIdx);
           const allGiftsSubset = app.gifts.slice(startIdx, endIdx);
 
           return new Promise(async (resolve) => {
@@ -2388,7 +2328,7 @@
             };
             const eventDateInfo = Utils.getEventDateInfo(app.currentEvent.startDateTime);
 
-            document.title = `${app.currentEvent.name}礼金记录{partIndex ? "-P" + partIndex : ""}-${eventDateInfo.localeDate}`;
+            document.title = `${app.currentEvent.name}礼金记录${partIndex ? "-P" + partIndex : ""}-${eventDateInfo.localeDate}`;
 
             // 封面页
             if (printOptions.printCover) {
@@ -2397,7 +2337,7 @@
               const formattedDate = eventDateInfo.formattedDisplay || "";
               coverPage.innerHTML = `
                   <div class="print-cover">
-                      ${printOptions.showCoverTitle ? `<p>${app.currentEvent.name}</p><p>${formattedDate}</p>` : ""}
+                      ${printOptions.showCoverTitle ? `<p>${Utils.escapeHtml(app.currentEvent.name)}</p><p>${formattedDate}</p>` : ""}
                       ${printOptions.showCoverTitle && partIndex ? `<p class="absolute top-[25mm] left-[30mm] !text-6xl">P${partIndex}</p>` : ""}
                   </div>
                 `;
@@ -2459,9 +2399,7 @@
           });
         }
 
-        /**
-         * 导出事项数据为 JSON（明文备份）
-         */
+        /** 导出事项数据为 JSON（明文备份） */
         async exportEventAsJson() {
           const app = this.app;
           if (!app.currentEvent) return;
@@ -2511,8 +2449,54 @@
             app.ui.showNotification("JSON 备份已导出。", "success");
           } catch (error) {
             console.error("导出 JSON 备份失败:", error);
-            app.ui.showNotification("导出 JSON 文件失败，请重试。", "error");
+            if (error.message === "decrypt_failed") {
+              app.ui.showNotification("存在无法用当前账号密码解密的记录，导出已中止（可能是密钥不匹配或数据损坏）。", "error");
+            } else {
+              app.ui.showNotification("导出 JSON 文件失败，请重试。", "error");
+            }
           }
+        }
+
+        /**
+         * 弹出"设置备份密码"对话框（导出 BIN 时使用，密码为手动设置，独立于账号密码）
+         * @returns {Promise<string|null>} 返回设置的密码或 null（取消）
+         */
+        requestExportPassword() {
+          const app = this.app;
+          return new Promise((resolve) => {
+            const content = `
+                        <p class="text-sm text-gray-600 mb-3">为加密备份设置一个导出密码。导入该备份文件时需要输入此密码。</p>
+                        <input type="password" id="export-pwd-input" class="w-full p-2 border rounded themed-ring mb-2" placeholder="设置备份密码">
+                        <input type="password" id="export-pwd-confirm" class="w-full p-2 border rounded themed-ring" placeholder="再次输入备份密码">
+                      `;
+            app.ui.showModal("设置备份密码", content, [
+              {
+                text: "取消",
+                class: "themed-button-secondary border px-4 py-2 rounded",
+                handler: () => resolve(null),
+              },
+              {
+                text: "确认导出",
+                class: "themed-button-primary px-4 py-2 rounded",
+                keepOpen: true, // 校验失败时保持弹窗打开，可重新输入
+                handler: () => {
+                  const pwd = document.getElementById("export-pwd-input")?.value || "";
+                  const confirm = document.getElementById("export-pwd-confirm")?.value || "";
+                  if (!pwd) {
+                    app.ui.showNotification("请设置备份密码。", "error");
+                    return;
+                  }
+                  if (pwd !== confirm) {
+                    app.ui.showNotification("两次输入的密码不一致。", "error");
+                    return;
+                  }
+                  app.ui.closeModal();
+                  resolve(pwd);
+                },
+              },
+            ]);
+            setTimeout(() => document.getElementById("export-pwd-input")?.focus(), 50);
+          });
         }
 
         /**
@@ -2522,12 +2506,16 @@
          *   - 0-3: Magic Number "EGLB" (0x45 0x47 0x4C 0x42)
          *   - 4:   版本号 (0x01)
          *   - 5-7: 保留字节
+         * 加密密钥为导出时手动设置的备份密码（与原项目互相兼容）
          */
         async exportEventAsBinary() {
           const app = this.app;
           if (!app.currentEvent) return;
 
           try {
+            // 步骤0：设置导出密码
+            const exportPassword = await this.requestExportPassword();
+            if (!exportPassword) return; // 用户取消导出
             // 定义文件格式常量
             const MAGIC_HEADER = [0x45, 0x47, 0x4c, 0x42]; // "EGLB"
             const FILE_VERSION = 0x01;
@@ -2542,7 +2530,8 @@
               if (!decrypted) {
                 throw new Error("decrypt_failed");
               }
-              const encryptedData = CryptoService.encrypt(decrypted, app.currentPassword);
+              // 每条礼金改用导出密码加密，保证备份在任何账号/项目中都能解密还原
+              const encryptedData = CryptoService.encrypt(decrypted, exportPassword);
               return {
                 encryptedData,
                 guestLevelWeight: gift.guestLevelWeight ?? 0,
@@ -2561,8 +2550,8 @@
               gifts: sanitizedGifts,
             };
 
-            // 加密整个 payload
-            const encryptedPayloadString = CryptoService.encrypt(JSON.stringify(payload), app.currentPassword);
+            // 用导出时设置的密码加密整个 payload
+            const encryptedPayloadString = CryptoService.encrypt(JSON.stringify(payload), exportPassword);
 
             // 生成文件名
             const safeName = (app.currentEvent.name || "event").replace(/[\\/:*?"<>|]/g, "_");
@@ -2627,11 +2616,7 @@
             const FILE_VERSION = 0x01;
             const HEADER_LENGTH = 8;
 
-            // 步骤1：验证当前事项的管理密码
-            const currentEventPassword = await app.requestAdminPassword("导入验证", "请输入当前事项的管理密码以继续。", app.currentEvent.passwordHash, true);
-            if (currentEventPassword === null) return;
-
-            // 步骤2：读取并验证文件格式
+            // 步骤1：读取并验证文件格式
             const arrayBuffer = await file.arrayBuffer();
             const fileBytes = new Uint8Array(arrayBuffer);
 
@@ -2654,7 +2639,7 @@
               return;
             }
 
-            // 步骤3：提取并解密数据（密文已为原始字节流）
+            // 步骤2：提取密文字节流
             const payloadBytes = fileBytes.slice(HEADER_LENGTH);
             let binaryString = "";
             const chunkSize = 0x8000;
@@ -2664,71 +2649,94 @@
             }
             const encryptedContent = btoa(binaryString);
 
-            // 尝试用当前事项密码解密
-            let decrypted = CryptoService.decrypt(encryptedContent, currentEventPassword);
-            let finalPassword = currentEventPassword;
-
-            // 如果解密失败，要求输入备份文件的密码
-            if (!decrypted) {
-              const backupPassword = await new Promise((resolve) => {
-                const content = `
+            // 步骤3：输入备份文件的导出密码并解密
+            const backupPassword = await new Promise((resolve) => {
+              const content = `
                         <p class="text-sm text-yellow-700 bg-yellow-50 p-3 rounded-md mb-3">
-                          使用当前事项密码解密失败。备份文件可能使用了不同的密码。
+                          请输入此备份文件的导出密码进行解密。
                         </p>
                         <input type="password" id="backup-pwd-input"
                                class="w-full p-2 border rounded themed-ring"
                                placeholder="请输入备份文件的解密密码">
                       `;
-                app.ui.showModal("输入解密密码", content, [
-                  {
-                    text: "取消",
-                    class: "themed-button-secondary border px-4 py-2 rounded",
-                    handler: () => resolve(null),
+              app.ui.showModal("输入解密密码", content, [
+                {
+                  text: "取消",
+                  class: "themed-button-secondary border px-4 py-2 rounded",
+                  handler: () => resolve(null),
+                },
+                {
+                  text: "确认",
+                  class: "themed-button-primary px-4 py-2 rounded",
+                  keepOpen: true, // 密码错误时保持弹窗打开，可重新输入
+                  handler: () => {
+                    const pwd = document.getElementById("backup-pwd-input").value.trim();
+                    if (!pwd) {
+                      app.ui.showNotification("请输入解密密码。", "error");
+                      return;
+                    }
+                    // 先解密验证，成功才关闭弹窗并继续导入
+                    const checkDecrypted = CryptoService.decrypt(encryptedContent, pwd);
+                    if (!checkDecrypted) {
+                      app.ui.showNotification("解密失败，密码错误或文件已损坏。", "error");
+                      return;
+                    }
+                    app.ui.closeModal();
+                    resolve(pwd);
                   },
-                  {
-                    text: "确认",
-                    class: "themed-button-primary px-4 py-2 rounded",
-                    handler: () => {
-                      const pwd = document.getElementById("backup-pwd-input").value;
-                      resolve(pwd);
-                    },
-                  },
-                ]);
-                setTimeout(() => document.getElementById("backup-pwd-input")?.focus(), 50);
-              });
+                },
+              ]);
+              setTimeout(() => document.getElementById("backup-pwd-input")?.focus(), 50);
+            });
 
-              if (backupPassword === null) {
-                app.ui.showNotification("已取消导入。", "info");
-                return;
-              }
+            if (backupPassword === null) {
+              app.ui.showNotification("已取消导入。", "info");
+              return;
+            }
 
-              decrypted = CryptoService.decrypt(encryptedContent, backupPassword);
-              finalPassword = backupPassword;
+            const decrypted = CryptoService.decrypt(encryptedContent, backupPassword);
+            const finalPassword = backupPassword;
 
-              if (!decrypted) {
-                app.ui.showNotification("解密失败，密码错误或文件已损坏。", "error");
-                return;
-              }
+            if (!decrypted) {
+              app.ui.showNotification("解密失败，密码错误或文件已损坏。", "error");
+              return;
             }
 
             // 步骤4：解析数据
             const payload = JSON.parse(decrypted);
             const giftRecords = Array.isArray(payload?.gifts) ? payload.gifts : [];
 
-            // 步骤5：根据缓存的勾选状态决定是否清空旧数据
+            // 步骤5：若需清空旧数据，先记录旧记录 id 列表
+            // （先插入新数据、成功后再删除旧数据，避免"先删后插"中途失败导致旧数据全部丢失）
+            let oldGiftIds = [];
             if (shouldClearOldData) {
               const existingGifts = await app.giftRepository.fetchGiftsByEvent(app.currentEvent.id);
-              for (const gift of existingGifts) {
-                await app.giftRepository.deleteGift(gift.id);
-              }
-              app.ui.showNotification("旧数据已清空。", "info");
+              oldGiftIds = existingGifts.map((g) => g.id);
             }
 
-            // 步骤6：导入礼金数据
+            // 步骤6：导入礼金数据（逐条改用当前账号密码重加密后插入）
+            let failedCount = 0;
+            let importedCount = 0;
             for (const record of giftRecords) {
               let encryptedData = record.encryptedData;
-              if (!encryptedData && record.data) {
-                encryptedData = CryptoService.encrypt(record.data, finalPassword);
+              if (encryptedData) {
+                // 用备份密码解开每条密文，再改用当前账号密码加密入库
+                // （兼容原项目用事项密码导出的旧备份，也兼容其他账号导出的备份）
+                const plain = CryptoService.decrypt(encryptedData, finalPassword);
+                if (plain) {
+                  encryptedData = CryptoService.encrypt(plain, app.currentPassword);
+                } else {
+                  // 密码不符或数据损坏：跳过该条，绝不可把旧密钥密文原样入库
+                  failedCount++;
+                  continue;
+                }
+              } else if (record.data) {
+                // 备份中若含明文数据，直接用当前账号密码加密入库
+                encryptedData = CryptoService.encrypt(record.data, app.currentPassword);
+              } else {
+                // 既无密文也无明文：无法入库，计入失败提示，避免静默丢弃
+                failedCount++;
+                continue;
               }
               if (!encryptedData) continue;
 
@@ -2738,6 +2746,19 @@
                 guestLevelWeight: record.guestLevelWeight ?? 0,
                 levelUpdateTime: record.levelUpdateTime ?? 0,
               });
+              importedCount++;
+            }
+            if (failedCount > 0) {
+              app.ui.showNotification(`有 ${failedCount} 条礼金因密码不符无法解密，已跳过（请确认输入的是导出备份时设置的密码）`, "error");
+            }
+
+            // 步骤6.5：新数据已全部写入成功，此时再删除旧数据
+            // 删除中途失败至多产生重复记录，不会再丢失原有数据
+            if (shouldClearOldData && oldGiftIds.length > 0) {
+              for (const giftId of oldGiftIds) {
+                await app.giftRepository.deleteGift(giftId, app.currentEvent.id);
+              }
+              app.ui.showNotification("旧数据已清空。", "info");
             }
 
             // 步骤7：更新事项信息
@@ -2751,7 +2772,6 @@
               ...app.currentEvent,
               ...eventSnapshot,
               id: app.currentEvent.id,
-              passwordHash: app.currentEvent.passwordHash,
               printOptions: mergedPrintOptions,
             };
             await app.giftRepository.updateEvent(updatedEvent);
@@ -2762,15 +2782,13 @@
             app.session.save(app.currentEvent, app.currentPassword);
 
             app.ui.closeModal();
-            app.ui.showNotification(`数据恢复成功，${shouldClearOldData ? "替换" : "追加"}了 ${giftRecords.length} 条记录。`, "success");
+            app.ui.showNotification(`数据恢复成功，${shouldClearOldData ? "替换" : "追加"}了 ${importedCount} 条记录。`, "success");
           } catch (error) {
             console.error("导入备份失败:", error);
             app.ui.showNotification("导入失败，文件格式可能无效或已损坏。", "error");
           }
         }
-        /**
-         * 显示备份/恢复弹窗，提供 JSON 与 BIN 导出或导入
-         */
+        /** 显示备份/恢复弹窗，提供 JSON 与 BIN 导出或导入 */
         showBackupRestoreModal() {
           const app = this.app;
           if (!app.currentEvent) return;
@@ -2793,7 +2811,7 @@
                             </div>
                             <p class="text-xs text-gray-500 -mt-1">默认不勾选，即以追加方式导入新数据。</p>
                             <button id="btn-restore-backup" class="w-full themed-button-primary px-4 py-2 rounded">导入并恢复</button>
-                            <p class="text-xs text-gray-500">导入时需输入当前事项的管理密码，请确保备份来源可靠。</p>
+                            <p class="text-xs text-gray-500">导入 BIN 时需输入导出时设置的备份密码；导入后数据将以当前账号密码加密保存。</p>
                           </div>
                         </div>
                       `;
@@ -2874,7 +2892,7 @@
                           <p class="text-sm text-gray-600">首次打印前建议补充关键信息，后续可在“设置事项”中继续修改。</p>
                           <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">记账人 <span class="text-xs text-red-400">(建议填写，非必填)</span></label>
-                            <input id="print-first-recorder" type="text" class="w-full p-2 border rounded themed-ring" maxlength="30" value="${currentRecorder}" placeholder="示例：王五">
+                            <input id="print-first-recorder" type="text" class="w-full p-2 border rounded themed-ring" maxlength="30" value="${Utils.escapeHtml(currentRecorder)}" placeholder="示例：王五">
                           </div>
                           <div>
                             <span class="block text-sm font-medium text-gray-700 mb-1">PDF渲染方式</span>
@@ -2963,8 +2981,6 @@
           });
         }
 
-        /**
-         */
         createGiftBookRows(gifts, isPrint = false) {
           const app = this.app;
           const fragment = document.createDocumentFragment();
@@ -3132,9 +3148,9 @@
               appendixPage.className = "print-page";
               const tableRows = pageItems
                 .map((item) => {
-                  const nameCellContent = item.gift.data.name;
+                  const nameCellContent = Utils.escapeHtml(item.gift.data.name);
                   const indexCellContent = item.isContinuation ? " (续上)" : item.gift.indexLabel;
-                  return `<tr><td>${nameCellContent}</td><td>${indexCellContent}</td><td class="text-left">${item.remarkText || "无"}</td></tr>`;
+                  return `<tr><td>${nameCellContent}</td><td>${indexCellContent}</td><td class="text-left">${Utils.escapeHtml(item.remarkText || "无")}</td></tr>`;
                 })
                 .join("");
 
@@ -3234,7 +3250,7 @@
                       </table>
                       <div class="w-[90%] mx-auto flex justify-end mt-20 pr-20">
                         <div class="text-center space-y-2 font-bold text-2xl">
-                          ${app.currentEvent.recorder ? `<p>记账人:  ${app.currentEvent.recorder}</p>` : ""}
+                          ${app.currentEvent.recorder ? `<p>记账人:  ${Utils.escapeHtml(app.currentEvent.recorder)}</p>` : ""}
                           <p>${eventDateInfo.formattedDisplay}</p>
                         </div>
                       </div>`;
@@ -3245,12 +3261,17 @@
          * 导出 Excel
          * 生成礼金明细及礼品清单（如有）
          */
-        exportToExcel() {
+        exportToExcel(giftsToExport = null) {
           const app = this.app;
-          if (app.gifts.length === 0) {
+          // 支持统计弹窗传入当前筛选后的数据；仅"未传参"才导出全部（如删除事项前的备份导出）。
+          // 显式传入空数组表示"当前筛选无结果"，不得回退为导出全量，避免用户误导出整本礼簿。
+          const exportSource = giftsToExport !== undefined && Array.isArray(giftsToExport) ? giftsToExport : app.gifts;
+          if (exportSource.length === 0) {
             app.ui.showNotification("没有可导出的数据。");
             return;
           }
+          // 导出需遍历全量明文：先同步解密所有记录，避免未解密数据导致崩溃
+          app.giftManager.ensureAllGiftsDecrypted();
 
           const formatHistoryToString = (historyArray) => {
             if (!historyArray || historyArray.length === 0) return "无修改记录";
@@ -3270,9 +3291,11 @@
           let activeCount = 0;
           let abolishedCount = 0;
 
-          // 直接遍历已排序的 app.gifts 数组
-          for (let i = 0; i < app.gifts.length; i++) {
-            const g = app.gifts[i];
+          // 遍历导出数据源（默认全部；统计弹窗中为当前筛选结果）
+          for (let i = 0; i < exportSource.length; i++) {
+            const g = exportSource[i];
+            // 数据损坏或解密失败时跳过该条，避免整个导出崩溃
+            if (!g.data) continue;
             const isAbolished = g.data.abolished === true;
             const guestLevel = g.data.guestLevel !== undefined ? g.data.guestLevel : 0;
             const guestLevelName = CONFIG.GUEST_LEVELS[guestLevel] || CONFIG.GUEST_LEVELS[0];
@@ -3323,7 +3346,7 @@
           dataToExport.push({
             姓名: "总计",
             金额: totalAmount,
-            收款类型: `有效记录 ${activeCount} 条,作废 ${abolishedCount} 条,共 ${app.gifts.length} 条`,
+            收款类型: `有效记录 ${activeCount} 条,作废 ${abolishedCount} 条,共 ${exportSource.length} 条`,
           });
 
           const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -3367,13 +3390,11 @@
             XLSX.utils.book_append_sheet(workbook, giftWorksheet, "礼品清单");
           }
           const eventDateInfo = Utils.getEventDateInfo(app.currentEvent.startDateTime);
-          XLSX.writeFile(workbook, `${app.currentEvent.name}-礼金明细(${eventDateInfo.localeDate}).xlsx`);
+          XLSX.writeFile(workbook, `${(app.currentEvent.name || "礼簿").replace(/[\\/:*?"<>|]/g, "_")}-礼金明细(${eventDateInfo.localeDate}).xlsx`);
           app.ui.showNotification("导出成功！", "success");
         }
       }
       class StatsService {
-        /**
-         */
         constructor(app) {
           this.app = app;
         }
@@ -3385,6 +3406,8 @@
         showStatistics() {
           const app = this.app;
           app.ui.elements.modal.classList.add("modal-large");
+          // 统计需遍历全量明文：先同步解密，避免未解密记录被静默排除或在网格渲染时崩溃
+          app.giftManager.ensureAllGiftsDecrypted();
 
           if (app.statsAreDirty || !app.cachedStats) {
             const activeGifts = app.gifts.filter((g) => g.data && !g.data.abolished);
@@ -3603,7 +3626,19 @@
             const exportBtn = document.getElementById("export-excel-stats-btn");
             if (exportBtn) {
               exportBtn.addEventListener("click", () => {
-                app.exportService.exportToExcel();
+                // 导出当前筛选状态下的数据（含网格搜索关键词），与界面所见一致
+                let exportSource = currentFilteredGifts;
+                const gridSearchInput = document.querySelector("#grid-table-container .gridjs-search-input");
+                const keyword = gridSearchInput?.value?.trim().toLowerCase();
+                if (keyword) {
+                  exportSource = exportSource.filter((g) => {
+                    if (!g.data) return false;
+                    const name = (g.data.name || "").toLowerCase();
+                    const remark = app.formatRemarkDisplay(g.data.remarkData || {}, " ").toLowerCase();
+                    return name.includes(keyword) || remark.includes(keyword);
+                  });
+                }
+                app.exportService.exportToExcel(exportSource);
               });
             }
           }, 100);
@@ -3629,7 +3664,7 @@
                             <li class="relative pl-6 pb-4">
                               <div class="absolute w-3 h-3 bg-gray-400 rounded-full -left-[7px] top-1 border-2 border-white"></div>
                               <div class="text-sm text-gray-500">${new Date(record.timestamp).toLocaleString("zh-CN")}</div>
-                              <div class="font-medium text-gray-800 mt-1">${record.changeLog}</div>
+                              <div class="font-medium text-gray-800 mt-1">${Utils.escapeHtml(record.changeLog)}</div>
                               ${
                                 index === reversedHistory.length - 1
                                   ? `<button class="btn-view-original mt-2 text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded text-gray-700" data-history-index="0">查看最原始记录</button>`
@@ -3644,12 +3679,8 @@
         }
       }
 
-      /**
-       * 副屏服务
-       */
+      /** 副屏服务 */
       class GuestScreenService {
-        /**
-         */
         constructor(app) {
           this.app = app;
           this.guestWindow = null;
@@ -3665,21 +3696,28 @@
           window.addEventListener("message", (e) => this.handleMessage(e));
         }
 
-        /**
-         */
         handleMessage(event) {
+          // 仅接受同源窗口消息，避免其他页面注入数据
+          if (event.origin !== window.location.origin) return;
           if (event.data?.type === "guest_screen_ready") {
+            // 主页面刷新后 guestWindow 引用丢失：用消息来源重新绑定并立即推送数据
+            if (event.source !== this.guestWindow) {
+              this.guestWindow = event.source;
+            }
             this.isConnected = true;
             this.syncToGuestScreen();
             this.startHeartbeat();
           }
         }
 
-        /**
-         */
         open() {
           if (this.guestWindow && !this.guestWindow.closed) {
             this.guestWindow.focus();
+            // 复用已打开的同名副屏窗口：直接主动推送数据并恢复心跳
+            // （主页面刷新后 guestWindow 引用已丢失，无法依赖副屏重发 ready，必须主动同步）
+            this.isConnected = true;
+            this.syncToGuestScreen();
+            this.startHeartbeat();
             return;
           }
 
@@ -3689,6 +3727,11 @@
           this.guestWindow = window.open("./guest-screen.html", "GuestScreen", `width=${screenWidth},height=${screenHeight},left=0,top=0,location=no,menubar=no,toolbar=no`);
 
           if (this.guestWindow) {
+            // 同名窗口被复用时不会重新执行副屏 init、也不会再发 ready，
+            // 主动推送一次当前数据确保副屏立即更新；首次打开时后续 ready 机制会再次同步兜底
+            this.isConnected = true;
+            this.syncToGuestScreen();
+            this.startHeartbeat();
             setTimeout(() => {
               if (this.guestWindow?.document.documentElement.requestFullscreen) {
                 this.guestWindow.document.documentElement.requestFullscreen().catch(() => console.log("无法自动全屏"));
@@ -3697,8 +3740,6 @@
           }
         }
 
-        /**
-         */
         syncToGuestScreen() {
           if (!this.guestWindow || this.guestWindow.closed) {
             this.isConnected = false;
@@ -3706,7 +3747,7 @@
             return;
           }
 
-          const currentPageGifts = this.app.gifts.slice((this.app.currentPage - 1) * app.getItemsPerPage(), this.app.currentPage * app.getItemsPerPage());
+          const currentPageGifts = this.app.gifts.slice((this.app.currentPage - 1) * this.app.getItemsPerPage(), this.app.currentPage * this.app.getItemsPerPage());
 
           const activeGifts = currentPageGifts.filter((g) => g.data && !g.data.abolished);
 
@@ -3725,6 +3766,7 @@
               })),
               hidePrivacy: this.app.currentEvent.hidePrivacy || false,
               typeText: this.app.currentEvent.theme === "theme-solemn" ? "礼金" : "贺礼",
+              itemsPerPage: this.app.getItemsPerPage(),
             },
             timestamp: Date.now(),
           };
@@ -3737,8 +3779,6 @@
           }
         }
 
-        /**
-         */
         startHeartbeat() {
           this.stopHeartbeat();
           this.heartbeatInterval = setInterval(() => {
@@ -3763,8 +3803,6 @@
           }, 30000);
         }
 
-        /**
-         */
         stopHeartbeat() {
           if (this.heartbeatInterval) {
             clearInterval(this.heartbeatInterval);
@@ -3772,8 +3810,6 @@
           }
         }
 
-        /**
-         */
         close() {
           this.stopHeartbeat();
           if (this.guestWindow && !this.guestWindow.closed) {
@@ -3789,11 +3825,9 @@
        * - 管理生命周期、事件绑定与数据流转
        */
       class GiftBookApp {
-        /**
-         */
         constructor() {
-          this.dbManager = new DBManager();
-          this.giftRepository = new GiftRepository(this.dbManager);
+          this.api = new ApiClient();
+          this.giftRepository = new GiftRepository(this.api);
           this.session = new SessionManager();
           this.passwordCache = new PasswordCache(CONFIG.PASSWORD_CACHE_DURATION);
           this.ui = new UIManager();
@@ -3802,8 +3836,11 @@
           this.statsService = new StatsService(this);
           this.guestScreenService = new GuestScreenService(this);
 
+          this.token = null;
+          this.user = null;
+          this.accountPasswordHash = null; // 账号密码的 SHA-256 哈希（用于账号密码校验）
           this.currentEvent = null;
-          this.currentPassword = null;
+          this.currentPassword = null; // 账号明文密码（客户端加解密密钥）
           this.gifts = [];
           this.currentPage = 1;
           this.isSpeechEnabled = true;
@@ -3822,15 +3859,16 @@
             { key: "phone", label: "电话" },
             { key: "address", label: "住址" },
           ];
+
+          this.api.onUnauthorized = () => this.forceLogout();
         }
 
         /**
          * 应用初始化入口
-         * 初始化数据库、绑定事件并尝试恢复上次会话
+         * 绑定事件并尝试恢复上次会话
          */
         async init() {
           try {
-            await this.dbManager.init();
             this.setupInitialUI();
             this.bindEvents();
             await this.tryRestoreSession();
@@ -3840,80 +3878,459 @@
           }
         }
 
-        /**
-         * 设置初始 UI 状态，例如默认时间与语音列表
-         */
+        /** 设置初始 UI 状态，例如默认时间与语音列表 */
         setupInitialUI() {
           const { date, time } = Utils.getCurrentDateTime();
           this.ui.elements.startDateInput.value = date;
-          this.ui.elements.startTimeInput.value = "00:00"; //time;
+          this.ui.elements.startTimeInput.value = "00:00";
           this.ui.elements.endDateInput.value = date;
           this.ui.elements.endTimeInput.value = "23:59";
           this.populateVoiceList();
         }
 
-        /**
-         * 尝试恢复会话，如果成功则直接进入主界面
-         */
+        /** 尝试恢复会话：先校验令牌，再还原账号密码与上次打开的事项 */
         async tryRestoreSession() {
           const savedSession = this.session.load();
-          if (!savedSession) {
-            await this.loadEvents();
-            this.ui.showScreen("setup");
+
+          if (savedSession?.token) {
+            this.api.setToken(savedSession.token);
+            this.token = savedSession.token;
+            this.user = savedSession.user || null;
+            this.accountPasswordHash = savedSession.accountPasswordHash || null;
+
+            // 还原账号明文密码（客户端加解密密钥）
+            if (savedSession.encryptedPassword && savedSession.accountPasswordHash) {
+              try {
+                const bytes = CryptoJS.AES.decrypt(savedSession.encryptedPassword, savedSession.accountPasswordHash);
+                const decryptedPassword = bytes.toString(CryptoJS.enc.Utf8);
+                if (decryptedPassword) this.currentPassword = decryptedPassword;
+              } catch (error) {
+                console.error("会话密码还原失败", error);
+              }
+            }
+
+            try {
+              const me = await this.api.request("GET", "/api/auth/me");
+              this.user = me;
+              this.session.setAuth({ token: this.token, user: me, accountPasswordHash: this.accountPasswordHash });
+
+              await this.updateAuthUI();
+              await this.loadEvents();
+
+              // 尝试恢复上次打开的事项
+              if (savedSession.event?.id) {
+                const event = await this.giftRepository.fetchEvent(savedSession.event.id).catch(() => null);
+                if (event) {
+                  this.currentEvent = event;
+                  await this.startSession();
+                  return;
+                }
+              }
+              this.ui.showScreen("setup");
+              return;
+            } catch (error) {
+              console.error("会话校验失败:", error);
+              this.session.destroy();
+              this.api.clearToken();
+              this.token = null;
+            }
+          }
+
+          this.ui.showScreen("setup");
+          await this.updateAuthUI();
+          await this.loadAuthConfig();
+        }
+
+        /** 加载所有事项到选择列表 */
+        async loadEvents() {
+          if (!this.token) return;
+          try {
+            const events = await this.giftRepository.fetchAllEvents();
+            this.ui.elements.eventSelector.innerHTML = '<option value="">请选择一个事项</option>';
+
+            if (events.length > 0) {
+              this.ui.elements.selectEventSection.classList.remove("hidden");
+              document.getElementById("or-text").classList.remove("hidden");
+              events.forEach((event, index) => {
+                const option = document.createElement("option");
+                option.value = event.id;
+                option.textContent = event.name;
+                if (index === events.length - 1) {
+                  option.selected = true;
+                }
+                this.ui.elements.eventSelector.appendChild(option);
+              });
+            } else {
+              this.ui.elements.selectEventSection.classList.add("hidden");
+              document.getElementById("or-text").classList.add("hidden");
+            }
+          } catch (error) {
+            console.error("加载事项失败:", error);
+            this.ui.showNotification("加载事项失败，请检查网络或服务状态。", "error");
+          }
+        }
+
+        /** 账号登录 */
+        async handleLogin() {
+          const account = document.getElementById("auth-account")?.value.trim();
+          const password = document.getElementById("auth-password")?.value;
+          if (!account || !password) {
+            this.ui.showNotification("请输入账号和密码。", "error");
             return;
           }
 
           try {
-            const { event, encryptedPassword } = savedSession;
-            const bytes = CryptoJS.AES.decrypt(encryptedPassword, event.passwordHash);
-            const decryptedPassword = bytes.toString(CryptoJS.enc.Utf8);
+            const res = await this.api.request("POST", "/api/auth/login", { account, password });
+            this.token = res.token;
+            this.user = res.user;
+            this.accountPasswordHash = CryptoService.hash(password);
+            this.currentPassword = password;
 
-            if (decryptedPassword) {
-              this.currentEvent = event;
-              this.currentPassword = decryptedPassword;
-              await this.startSession();
+            this.api.setToken(this.token);
+            this.session.setAuth({ token: this.token, user: this.user, accountPasswordHash: this.accountPasswordHash });
+            // 立即持久化登录状态，刷新后保持登录（未进入事项也可恢复）
+            this.session.save(null, password);
+            if (document.getElementById("auth-password")) document.getElementById("auth-password").value = "";
+
+            this.ui.showNotification("登录成功。", "success");
+            await this.updateAuthUI();
+            await this.loadEvents();
+          } catch (error) {
+            this.ui.showNotification(error.message || "登录失败，请重试。", "error");
+          }
+        }
+
+        /** 注册新账号（成功后回到登录页，表单清空） */
+        async handleRegister() {
+          const account = document.getElementById("auth-account")?.value.trim();
+          const nickname = document.getElementById("auth-nickname")?.value.trim();
+          const password = document.getElementById("auth-password")?.value;
+          const confirm = document.getElementById("auth-password-confirm")?.value;
+          if (!account || !password || !confirm) {
+            this.ui.showNotification("请输入账号、密码并确认密码。", "error");
+            return;
+          }
+          if (password !== confirm) {
+            this.ui.showNotification("两次输入的密码不一致。", "error");
+            return;
+          }
+
+          try {
+            // username（显示名）留空时后端默认使用账号
+            await this.api.request("POST", "/api/auth/register", { account, username: nickname || undefined, password });
+            // 注册成功后回到登录模式；清空登录与注册草稿，保证表单为空
+            // （不自动填充账号密码，避免密码残留在输入框中；再次打开注册页同样为空）
+            this._loginDraft = undefined;
+            this.switchAuthMode("login");
+            this._registerDraft = undefined;
+            this.ui.showNotification("注册成功，请登录。", "success");
+          } catch (error) {
+            this.ui.showNotification(error.message || "注册失败，请重试。", "error");
+          }
+        }
+
+        /** 退出登录 */
+        handleLogout() {
+          this.guestScreenService.close(); // 停止副屏心跳并关闭副屏窗口
+          this.session.destroy();
+          this.session.setAuth(null);
+          this.api.clearToken();
+          this.passwordCache.clearAll(); // 清理本地密码缓存，避免共享电脑残留他人密码密文
+          this.token = null;
+          this.user = null;
+          this.accountPasswordHash = null;
+          this.currentPassword = null;
+          this.currentEvent = null;
+          this.gifts = [];
+          this.currentPage = 1;
+          this.ui.showNotification("已退出登录。", "info");
+          this.ui.showScreen("setup");
+          this.updateAuthUI();
+        }
+
+        /** 令牌失效时强制回到登录状态 */
+        forceLogout() {
+          this.guestScreenService.close(); // 停止副屏心跳并关闭副屏窗口
+          this.session.destroy();
+          this.session.setAuth(null);
+          this.api.clearToken();
+          this.passwordCache.clearAll();
+          this.token = null;
+          this.user = null;
+          this.accountPasswordHash = null;
+          this.currentPassword = null;
+          this.currentEvent = null;
+          this.gifts = [];
+          this.ui.showScreen("setup");
+          this.updateAuthUI();
+        }
+
+        /**
+         * 登录/注册模式切换：
+         * - 登录模式：显示登录按钮 + 密码输入框，隐藏注册按钮与确认密码输入框
+         * - 注册模式：显示注册按钮 + 确认密码输入框，隐藏登录按钮
+         */
+        switchAuthMode(mode) {
+          const isRegister = mode === "register";
+          const get = (id) => document.getElementById(id)?.value || "";
+          const set = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.value = value;
+          };
+
+          // 1. 保存当前模式的输入草稿（切换时保留，返回时恢复）
+          if (this._authMode === "register") {
+            this._registerDraft = {
+              account: get("auth-account"),
+              nickname: get("auth-nickname"),
+              password: get("auth-password"),
+              confirm: get("auth-password-confirm"),
+            };
+          } else if (this._authMode === "login") {
+            this._loginDraft = {
+              account: get("auth-account"),
+              password: get("auth-password"),
+            };
+          }
+          this._authMode = mode;
+
+          // 2. 切换按钮与输入框的显示/隐藏
+          document.getElementById("auth-login-btn")?.classList.toggle("hidden", isRegister);
+          document.getElementById("auth-register-btn")?.classList.toggle("hidden", !isRegister);
+          document.getElementById("auth-password-confirm")?.classList.toggle("hidden", !isRegister);
+          document.getElementById("auth-nickname")?.classList.toggle("hidden", !isRegister);
+          const toggle = document.getElementById("auth-mode-toggle");
+          if (toggle) {
+            if (isRegister) {
+              toggle.classList.remove("hidden");
+              toggle.innerHTML = '已有账号？点击<span id="auth-switch-to-login" class="text-blue-600 cursor-pointer select-none">「去登录」</span>';
+              document.getElementById("auth-switch-to-login")?.addEventListener("click", () => this.switchAuthMode("login"));
+            } else if (this._registrationEnabled) {
+              toggle.classList.remove("hidden");
+              toggle.innerHTML = '没有账号？点击<span id="auth-switch-to-register" class="text-blue-600 cursor-pointer select-none">「注册新账号」</span>创建账号后即可使用。';
+              document.getElementById("auth-switch-to-register")?.addEventListener("click", () => this.switchAuthMode("register"));
+            } else {
+              toggle.classList.add("hidden");
+            }
+          }
+
+          // 3. 恢复目标模式的草稿（无草稿则清空输入框：注册页始终为空、登录页保留之前输入）
+          const draft = isRegister ? this._registerDraft : this._loginDraft;
+          set("auth-account", draft?.account || "");
+          set("auth-nickname", isRegister ? draft?.nickname || "" : "");
+          set("auth-password", draft?.password || "");
+          set("auth-password-confirm", isRegister ? draft?.confirm || "" : "");
+        }
+
+        /** 根据登录状态切换界面：登录/注册表单 与 事项管理区域 */
+        updateAuthUI() {
+          const loggedIn = !!this.token;
+          const authSection = document.getElementById("auth-section");
+          if (authSection) authSection.classList.remove("hidden");
+          document.getElementById("auth-login-panel")?.classList.toggle("hidden", loggedIn);
+          this.ui.elements.selectEventSection?.classList.toggle("hidden", !loggedIn);
+          document.getElementById("create-event-section")?.classList.toggle("hidden", !loggedIn);
+          // 右上角头像（登录后显示，以显示名首字作为头像内容）
+          const avatarWrap = document.getElementById("user-avatar-wrap");
+          if (avatarWrap) {
+            avatarWrap.classList.toggle("hidden", !loggedIn);
+            if (loggedIn) {
+              const username = this.user?.username || this.user?.account || "";
+              const letterEl = document.getElementById("user-avatar-letter");
+              const nameEl = document.getElementById("avatar-menu-name");
+              if (letterEl) letterEl.textContent = username.charAt(0).toUpperCase() || "?";
+              if (nameEl) nameEl.textContent = username;
+            }
+          }
+          if (!loggedIn) {
+            // 登出/未登录时重置为登录模式，清空输入框
+            this.toggleAvatarMenu(false);
+            this.switchAuthMode("login");
+            const accountInput = document.getElementById("auth-account");
+            const nicknameInput = document.getElementById("auth-nickname");
+            const passwordInput = document.getElementById("auth-password");
+            const confirmInput = document.getElementById("auth-password-confirm");
+            if (accountInput) accountInput.value = "";
+            if (nicknameInput) nicknameInput.value = "";
+            if (passwordInput) passwordInput.value = "";
+            if (confirmInput) confirmInput.value = "";
+          }
+        }
+
+        /** 头像下拉菜单开合（force 可选：true=打开，false=关闭，缺省=切换） */
+        toggleAvatarMenu(force) {
+          const menu = document.getElementById("user-avatar-menu");
+          if (!menu) return;
+          const willShow = typeof force === "boolean" ? force : menu.classList.contains("hidden");
+          menu.classList.toggle("hidden", !willShow);
+        }
+
+        /** 查看当前账号信息（头像在左，右侧显示用户名与账号） */
+        showUserProfile() {
+          const username = this.user?.username || this.user?.account || "";
+          const account = this.user?.account || "";
+          const letter = username.charAt(0).toUpperCase() || "?";
+          const html = `
+            <div class="flex items-center gap-4 py-2">
+              <div class="w-16 h-16 rounded-full themed-button-primary flex items-center justify-center text-white text-2xl font-bold shrink-0">${letter}</div>
+              <div>
+                <div class="text-lg font-semibold text-gray-800">${Utils.escapeHtml(username)}</div>
+                <div class="text-sm text-gray-500 mt-1">账号：${Utils.escapeHtml(account)}</div>
+              </div>
+            </div>
+          `;
+          this.ui.showModal("查看信息", html, [
+            { text: "关闭", class: "themed-button-secondary border px-6 py-2 rounded-lg" },
+          ]);
+        }
+
+        /** 修改密码（连带处理：成功后用新密码重加密当前账号所有礼金数据） */
+        handleChangePassword() {
+          const app = this;
+          const content = `
+            <div class="flex flex-col gap-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">旧密码</label>
+                <input type="password" id="chpwd-old" class="w-full p-2 border rounded-lg focus:ring-2 themed-ring" autocomplete="current-password" placeholder="请输入当前密码">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">新密码</label>
+                <input type="password" id="chpwd-new" class="w-full p-2 border rounded-lg focus:ring-2 themed-ring" autocomplete="new-password" placeholder="至少 6 位">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">确认新密码</label>
+                <input type="password" id="chpwd-confirm" class="w-full p-2 border rounded-lg focus:ring-2 themed-ring" autocomplete="new-password" placeholder="再次输入新密码">
+              </div>
+              <p class="text-xs text-gray-500">修改成功后，当前账号下所有事项的礼金数据将使用新密码重新加密。</p>
+            </div>
+          `;
+          this.ui.showModal("修改密码", content, [
+            {
+              text: "取消",
+              class: "themed-button-secondary border px-4 py-2 rounded",
+              handler: () => {},
+            },
+            {
+              text: "确认修改",
+              class: "themed-button-primary px-4 py-2 rounded",
+              keepOpen: true,
+              handler: () => {
+                const oldPwd = document.getElementById("chpwd-old")?.value || "";
+                const newPwd = document.getElementById("chpwd-new")?.value || "";
+                const confirmPwd = document.getElementById("chpwd-confirm")?.value || "";
+                if (!oldPwd || !newPwd || !confirmPwd) {
+                  app.ui.showNotification("请完整填写旧密码、新密码和确认密码。", "error");
+                  return;
+                }
+                if (newPwd !== confirmPwd) {
+                  app.ui.showNotification("两次输入的新密码不一致。", "error");
+                  return;
+                }
+                app._performPasswordChange(oldPwd, newPwd);
+              },
+            },
+          ]);
+          setTimeout(() => document.getElementById("chpwd-old")?.focus(), 50);
+        }
+
+        /**
+         * 执行密码修改：本地重加密全部礼金 → 单次请求事务内更新（礼金密文 + 密码哈希）
+         * 任一步失败整体回滚，旧密码仍有效，可安全重试
+         */
+        async _performPasswordChange(oldPwd, newPwd) {
+          // 防重复提交：改密为重加密 + 事务操作，处理期间禁止再次触发（否则第二个请求用旧密码必然失败，误导用户）
+          if (this.isChangingPassword) return;
+          this.isChangingPassword = true;
+          this.ui.showNotification("正在修改密码…", "info");
+          try {
+            // 先在本地用旧密码解密、新密码重加密全部礼金（只读取不写入）
+            const reencryptedGifts = await this.collectReencryptedGifts(oldPwd, newPwd);
+            // 服务端在同一事务内先更新全部礼金密文，再更新密码哈希
+            await this.api.request("PUT", "/api/auth/password", {
+              oldPassword: oldPwd,
+              newPassword: newPwd,
+              reencryptedGifts,
+            });
+
+            // 更新本地密钥状态（加密密钥 = 新密码）
+            this.currentPassword = newPwd;
+            this.accountPasswordHash = CryptoService.hash(newPwd);
+            // 清理旧密码的免密缓存，避免后续用旧密码解密新密文
+            this.passwordCache.clearAll();
+            try {
+              this.session.setAuth({ token: this.token, user: this.user, accountPasswordHash: this.accountPasswordHash });
+              this.session.save(this.currentEvent, this.currentPassword);
+            } catch (e) {
+              console.error("会话保存失败:", e);
+              // 服务端已改密成功，仅提示本地会话保存异常，不误报"修改失败"
+              this.ui.showNotification("密码修改成功，但本地会话保存失败，请重新登录以确保安全。", "info");
+            }
+
+            // 同步内存中当前事项的密文，避免后续编辑用旧密钥解密失败
+            if (Array.isArray(this.gifts) && reencryptedGifts.length) {
+              const byId = new Map(reencryptedGifts.map((g) => [g.id, g.encryptedData]));
+              for (const g of this.gifts) {
+                if (byId.has(g.id)) g.encryptedData = byId.get(g.id);
+              }
+            }
+
+            this.ui.closeModal();
+            this.toggleAvatarMenu(false);
+            this.ui.showNotification("密码修改成功，所有数据已重新加密。", "success");
+          } catch (error) {
+            this.ui.showNotification(error.message || "密码修改失败，请重试。", "error");
+          } finally {
+            this.isChangingPassword = false;
+          }
+        }
+
+        /**
+         * 收集重加密后的全部礼金密文（本地用旧密码解密、新密码加密，不写服务器）
+         * 任一条礼金无法用旧密码解密时中止，避免改密后数据永久无法解密
+         * @returns {Promise<Array<{id: number, encryptedData: string}>>}
+         */
+        async collectReencryptedGifts(oldPwd, newPwd) {
+          const events = await this.giftRepository.fetchAllEvents();
+          const reencrypted = []; // { id, encryptedData }
+          for (const event of events) {
+            const gifts = await this.giftRepository.fetchGiftsByEvent(event.id);
+            for (const gift of gifts) {
+              const plain = CryptoService.decrypt(gift.encryptedData, oldPwd);
+              if (!plain) {
+                throw new Error(`礼金 #${gift.id} 无法用旧密码解密，已中止修改密码，请先检查数据`);
+              }
+              const encryptedData = CryptoService.encrypt(plain, newPwd);
+              reencrypted.push({ id: gift.id, encryptedData });
+            }
+          }
+          return reencrypted;
+        }
+
+        /** 获取后端注册开关配置，开启注册时才显示"注册新账号"入口 */
+        async loadAuthConfig() {
+          try {
+            const cfg = await this.api.request("GET", "/api/auth/config");
+            this._registrationEnabled = cfg.registrationEnabled;
+            const toggle = document.getElementById("auth-mode-toggle");
+            if (!toggle) return;
+            if (cfg.registrationEnabled) {
+              toggle.classList.remove("hidden");
+              toggle.innerHTML = '没有账号？点击<span id="auth-switch-to-register" class="text-blue-600 cursor-pointer select-none">「注册新账号」</span>创建账号后即可使用。';
+              document.getElementById("auth-switch-to-register")?.addEventListener("click", () => this.switchAuthMode("register"));
+            } else {
+              toggle.classList.add("hidden");
             }
           } catch (error) {
-            console.error("会话恢复失败", error);
-            this.session.clear();
-            await this.loadEvents();
-            this.ui.showScreen("setup");
+            console.error("获取注册配置失败:", error);
           }
         }
 
-        /**
-         * 加载所有事项到选择列表
-         */
-        async loadEvents() {
-          const events = await this.giftRepository.fetchAllEvents();
-          this.ui.elements.eventSelector.innerHTML = '<option value="">请选择一个事项</option>';
-
-          if (events.length > 0) {
-            this.ui.elements.selectEventSection.classList.remove("hidden");
-            document.getElementById("or-text").classList.remove("hidden");
-            events.forEach((event, index) => {
-              const option = document.createElement("option");
-              option.value = event.id;
-              option.textContent = event.name;
-              if (index === events.length - 1) {
-                option.selected = true;
-              }
-              this.ui.elements.eventSelector.appendChild(option);
-            });
-          } else {
-            this.ui.elements.selectEventSection.classList.add("hidden");
-            document.getElementById("or-text").classList.add("hidden");
-          }
-        }
-
-        /**
-         * 启动事项会话，应用主题、加载礼金数据并展示主界面
-         */
+        /** 启动事项会话，应用主题、加载礼金数据并展示主界面 */
         async startSession() {
           this.ui.elements.currentEventTitleEl.textContent = this.currentEvent.name;
           this.ui.applyTheme(this.currentEvent.theme);
 
-          this.applyCustomGiftBookStyle();
+          await this.applyCustomGiftBookStyle();
 
           this.currentEvent.printOptions = {
             ...DEFAULT_PRINT_OPTIONS,
@@ -3930,31 +4347,61 @@
           const endTime = new Date(this.currentEvent.endDateTime);
           const now = new Date();
 
-          if (now > endTime && !this.session.hasNotification(this.currentEvent.id)) {
-            const title = "请及时导出数据";
-            const message = `当前事项已结束，为确保数据安全，强烈建议您尽快通过【<strong>导出为 Excel</strong>】或【<strong>打印/另存为PDF</strong>】功能，将礼金数据完整备份至您的电脑或者微信。<br>
-                             <span class="text-sm text-gray-600">原因：时间长了，存储空间可能会因浏览器清理、缓存清除等操作被重置，导致数据意外丢失。</span>`;
+          if (now > endTime && !this.currentEvent.exportReminded) {
+            const title = "当前事项已结束";
+            const message = `为方便长期留存与查阅，推荐通过【<strong>导出为 Excel</strong>】或【<strong>打印/另存为 PDF</strong>】功能，将礼金数据完整保存至电脑或微信，方便离线查阅。<br>
+                             <span class="text-sm text-gray-600">云端数据为原始记录，导出为本地备份后，请与云端相互核对，确保版本一致。</span>`;
 
             setTimeout(() => {
-              this.ui.showModal(title, message, [{ text: "我已知晓", class: "themed-button-primary px-4 py-2 rounded", role: "secondary" }]);
-              this.session.markNotification(this.currentEvent.id);
+              this.ui.showModal(title, message, [{
+                text: "我已知晓",
+                class: "themed-button-primary px-4 py-2 rounded",
+                role: "secondary",
+                handler: async () => {
+                  try {
+                    // 确认状态写入数据库，跨设备生效，下次进入不再提醒
+                    await this.giftRepository.markExportReminded(this.currentEvent.id);
+                    this.currentEvent.exportReminded = true;
+                  } catch (error) {
+                    console.error("标记提醒失败:", error);
+                    // 静默失败：下次进入仍会提醒
+                  }
+                },
+              }]);
             }, 500);
           }
 
           await this.giftManager.loadGiftsForCurrentEvent();
+          // 校验当前密码能解密已有数据，防止用错误/缺失密钥写入导致永久无法解密
+          if (!this.verifyCurrentPassword()) return;
           this.ui.showScreen("main");
         }
-        /**
-         * 显示联系与支持作者弹窗
-         */
+
+        /** 校验当前密码能否解密已有数据，失败则强制重新登录 */
+        verifyCurrentPassword() {
+          if (!this.currentPassword) {
+            this.ui.showNotification("无法获取加解密密钥，请重新登录。", "error");
+            this.forceLogout();
+            return false;
+          }
+          const firstGift = this.gifts.find((g) => g.encryptedData);
+          if (!firstGift) return true; // 无数据可验证，视为通过
+          if (CryptoService.decrypt(firstGift.encryptedData, this.currentPassword) === null) {
+            this.ui.showNotification("当前密码无法解密数据，可能已在其他设备修改过密码，请重新登录。", "error");
+            this.forceLogout();
+            return false;
+          }
+          return true;
+        }
+        /** 显示联系与支持作者弹窗 */
         showAuthorSupportModal() {
           // 定义样式常量
           const containerClass = "flex flex-col md:flex-row gap-1 justify-center items-center py-4 px-2";
           const cardClass = "text-center flex-1 w-full flex flex-col items-center";
           const imgBoxClass = "w-48 h-48 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center overflow-hidden mb-3 relative group transition-all hover:border-solid";
           const imgClass = "w-full h-full object-contain p-1";
-          const wechatQrSrc = "./static/addme.jpg";
-          const payQrSrc = "./static/support.jpg";
+          const wechatQrSrc = "./static/WeChat.png";
+          const payQrSrc = "./static/Tip.png";
 
           const html = `
           <div class="${containerClass}">
@@ -3983,22 +4430,59 @@
                   此处放收款码<br>(请替换图片路径)
                 </div>
               </div>
-              <p class="text-sm font-medium text-red-600 bg-red-50 px-3 py-1 rounded-full mt-1">感谢您的鼓励与支持 ❤️</p>
+              <p class="text-sm font-medium text-red-600 bg-red-50 px-3 py-1 rounded-full mt-1">感谢您的鼓励与支持</p>
             </div>
 
           </div>
           
           <div class="text-center mt-2 p-3 bg-yellow-50 rounded-lg text-xs text-yellow-700 border border-yellow-200">
             <i class="ri-information-line align-middle mr-1"></i>
-            本程序为开源免费程序，如果您觉得这个系统对您有帮助，欢迎联系作者提建议。
+            本程序为<a href="https://github.com/git-caballos/gift-book-server" target="_blank" rel="noopener noreferrer"><B>开源免费程序</B></a>，如果您觉得这个系统对您有帮助，欢迎联系作者提建议。
           </div>
         `;
           this.ui.showModal("联系开发者", html, [{ text: "关闭", class: "themed-button-secondary border px-6 py-2 rounded-lg" }]);
         }
-        /**
-         * 绑定页面交互事件，负责表单、快捷键与辅助功能
-         */
+        /** 绑定页面交互事件，负责表单、快捷键与辅助功能 */
         bindEvents() {
+          // 账号登录/注册/退出
+          document.getElementById("auth-login-btn")?.addEventListener("click", () => this.handleLogin());
+          document.getElementById("auth-register-btn")?.addEventListener("click", () => this.handleRegister());
+          document.getElementById("auth-password")?.addEventListener("keydown", (e) => {
+            if (e.key !== "Enter") return;
+            // 注册模式下回车提交注册，否则提交登录
+            const isRegisterMode = !document.getElementById("auth-register-btn")?.classList.contains("hidden");
+            if (isRegisterMode) this.handleRegister();
+            else this.handleLogin();
+          });
+          document.getElementById("auth-password-confirm")?.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") this.handleRegister();
+          });
+          // 注意：auth-switch-to-register 的点击事件由 loadAuthConfig / switchAuthMode 在重建元素时绑定，
+          // 此处不再绑定，避免与动态绑定的监听重复触发。
+
+          // 头像下拉菜单
+          document.getElementById("user-avatar-btn")?.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.toggleAvatarMenu();
+          });
+          document.getElementById("user-menu-profile")?.addEventListener("click", () => {
+            this.toggleAvatarMenu(false);
+            this.showUserProfile();
+          });
+          document.getElementById("user-menu-password")?.addEventListener("click", () => {
+            this.toggleAvatarMenu(false);
+            this.handleChangePassword();
+          });
+          document.getElementById("user-menu-logout")?.addEventListener("click", () => {
+            this.toggleAvatarMenu(false);
+            this.handleLogout();
+          });
+          // 点击页面其他区域关闭头像下拉菜单
+          document.addEventListener("click", (e) => {
+            const wrap = document.getElementById("user-avatar-wrap");
+            if (wrap && !wrap.contains(e.target)) this.toggleAvatarMenu(false);
+          });
+
           // 表单提交事件
           this.ui.elements.createEventForm.addEventListener("submit", (e) => this.handleCreateEvent(e));
           this.ui.elements.addGiftForm.addEventListener("submit", (e) => this.handleAddGift(e));
@@ -4015,6 +4499,16 @@
               e.preventDefault();
               const preset = btn.dataset.preset;
               this.toggleRemarkPreset(preset, btn);
+            });
+          });
+          // 快捷金额按钮：点击填入金额并聚焦，填写姓名后可直接回车提交
+          document.querySelectorAll(".amount-preset-btn").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+              e.preventDefault();
+              const amountInput = this.ui.elements.giftAmountInput;
+              amountInput.value = btn.dataset.amount;
+              amountInput.dispatchEvent(new Event("input", { bubbles: true }));
+              amountInput.focus();
             });
           });
           // 分页按钮
@@ -4193,12 +4687,10 @@
           });
         }
 
-        /**
-         */
         handlePageInputChange(e) {
           const input = e.target;
           const newPage = parseInt(input.value, 10);
-          const totalPages = Math.ceil(this.gifts.length / app.getItemsPerPage()) || 1;
+          const totalPages = Math.ceil(this.gifts.length / this.getItemsPerPage()) || 1;
 
           if (!isNaN(newPage) && newPage >= 1 && newPage <= totalPages && newPage !== this.currentPage) {
             this.currentPage = newPage;
@@ -4209,39 +4701,28 @@
           }
         }
 
-        /**
-         * 根据事项 ID 校验管理员密码并进入会话
-         */
+        /** 根据事项 ID 进入会话（账号体系下无需再输入事项密码） */
         async handleUnlockEvent(eventId) {
-          const event = await this.giftRepository.fetchEvent(eventId);
-          if (!event) {
-            this.ui.showNotification("未找到该事项。", "error");
-            return;
-          }
-
-          // 使用统一的密码校验方法
-          const password = await this.requestAdminPassword("输入管理密码", null, event.passwordHash, true);
-
-          if (password === null) {
-            // 用户取消
-            return;
-          }
-
-          if (password) {
+          try {
+            const event = await this.giftRepository.fetchEvent(eventId);
+            if (!event) {
+              this.ui.showNotification("未找到该事项。", "error");
+              return;
+            }
             this.currentEvent = event;
-            this.currentPassword = password;
             await this.startSession();
+          } catch (error) {
+            console.error("进入事项失败:", error);
+            this.ui.showNotification("进入事项失败，请重试。", "error");
           }
         }
 
-        /**
-         * 返回创建/选择事项界面并清除当前会话
-         */
+        /** 返回创建/选择事项界面并清除当前事项会话（账号保持登录态） */
         showSetupScreen() {
+          this.guestScreenService.close(); // 返回设置页时停止副屏心跳并关闭副屏窗口
           const previousEventId = this.currentEvent?.id;
           this.session.clear();
           this.currentEvent = null;
-          this.currentPassword = null;
           this.gifts = [];
           if (previousEventId) {
             this.passwordCache.clear(previousEventId);
@@ -4249,24 +4730,22 @@
           // 恢复创建表单的开始/结束默认时间
           this.setupInitialUI();
           this.ui.showScreen("setup");
+          this.updateAuthUI();
           this.loadEvents();
         }
 
-        /**
-         * 创建新事项，包含表单校验与封面、打印配置处理
-         */
+        /** 创建新事项，包含表单校验与封面、打印配置处理 */
         async handleCreateEvent(e) {
           e.preventDefault();
           const name = this.ui.elements.eventNameInput.value.trim();
           const startDateTime = `${this.ui.elements.startDateInput.value}T${this.ui.elements.startTimeInput.value}`;
           const endDateTime = `${this.ui.elements.endDateInput.value}T${this.ui.elements.endTimeInput.value}`;
-          const password = this.ui.elements.adminPasswordInput.value;
           const theme = this.ui.elements.eventThemeSelect.value;
           const voiceName = this.ui.elements.eventVoiceSelect.value;
           const recorder = document.getElementById("event-recorder").value.trim();
           const pdfEngine = "browser";
 
-          if (!name || !password || !startDateTime || !endDateTime) {
+          if (!name || !startDateTime || !endDateTime) {
             this.ui.showNotification("请填写所有必填项。", "error");
             return;
           }
@@ -4276,64 +4755,30 @@
             return;
           }
 
-          let coverType = "default";
-          // 弹窗二次验证刚输入的管理密码，防止记错
-          const verifyContent = `
-                        <div class="text-left">
-                          <p class="mb-2">为确保管理密码输入无误，请再次输入以确认：</p>
-                          <input type="password" id="verify-create-pwd" class="w-full p-2 border rounded themed-ring" placeholder="再次输入管理密码">
-                          <p class="text-xs text-gray-500 mt-2">提示：两次密码需完全一致，才可以创建事项。</p>
-                        </div>
-                      `;
-
-          this.ui.showModal("确认管理密码", verifyContent, [
-            { text: "取消", class: "themed-button-secondary border px-4 py-2 rounded", role: "secondary" },
-            {
-              text: "确认创建",
-              class: "themed-button-primary px-4 py-2 rounded",
-              role: "primary",
-              keepOpen: true,
-              handler: async () => {
-                const verifyPwd = document.getElementById("verify-create-pwd").value;
-                if (verifyPwd !== password) {
-                  this.ui.showNotification("两次输入的管理密码不一致，请重新确认", "error");
-                  return;
-                }
-
-                const newEvent = {
-                  name,
-                  startDateTime,
-                  endDateTime,
-                  passwordHash: CryptoService.hash(password),
-                  theme,
-                  voiceName,
-                  coverType: coverType,
-                  recorder: recorder,
-                  minSpeechAmount: 0,
-                  coverType,
-                  printOptions: {
-                    ...DEFAULT_PRINT_OPTIONS,
-                    pdfEngine,
-                  },
-                };
-
-                try {
-                  const newEventId = await this.giftRepository.createEvent(newEvent);
-                  this.currentEvent = { ...newEvent, id: newEventId };
-                  this.currentPassword = password;
-
-                  this.ui.elements.createEventForm.reset();
-                  this.ui.closeModal();
-                  await this.startSession();
-                  this.ui.showNotification("事项创建成功。", "success");
-                } catch (error) {
-                  this.ui.showNotification("创建事项失败，请重试。", "error");
-                }
-              },
+          const newEvent = {
+            name,
+            startDateTime,
+            endDateTime,
+            theme,
+            voiceName,
+            coverType: "default",
+            recorder,
+            minSpeechAmount: 0,
+            printOptions: {
+              ...DEFAULT_PRINT_OPTIONS,
+              pdfEngine,
             },
-          ]);
+          };
 
-          setTimeout(() => document.getElementById("verify-create-pwd")?.focus(), 50);
+          try {
+            const createdEvent = await this.giftRepository.createEvent(newEvent);
+            this.currentEvent = createdEvent;
+            this.ui.elements.createEventForm.reset();
+            await this.startSession();
+            this.ui.showNotification("事项创建成功。", "success");
+          } catch (error) {
+            this.ui.showNotification("创建事项失败，请重试。", "error");
+          }
         }
 
         /**
@@ -4363,8 +4808,9 @@
             this.ui.showNotification("当收款类型为“其他”时，请在备注中说明具体情况。", "error");
             return; // 阻止提交
           }
-          // 检查重复记录：同名或同名同金额
-          const sameNameGifts = this.gifts.filter((g) => g.data?.name === name);
+          // 检查重复记录：同名或同名同金额（先确保全量解密，避免漏检；排除已作废记录，避免误报）
+          this.giftManager.ensureAllGiftsDecrypted();
+          const sameNameGifts = this.gifts.filter((g) => g.data && !g.data.abolished && g.data.name === name);
           const exactMatchExists = sameNameGifts.some((g) => g.data?.amount === amount);
 
           // 显示确认对话框（根据重复情况显示不同的警告级别）
@@ -4379,6 +4825,8 @@
           let modalTitle, modalContent;
           this.ui.elements.giftAmountInput.blur();
           const remarkDisplay = this.formatRemarkDisplay(remarkData);
+          const safeName = Utils.escapeHtml(name);
+          const safeRemarkDisplay = Utils.escapeHtml(remarkDisplay);
 
           // 生成备注输入框HTML（使用通用方法）
           const remarkInputsHTML = `
@@ -4396,7 +4844,7 @@
                               <strong class="font-bold">警告：</strong>
                               <p class="text-sm">系统中已存在“相同姓名”且“相同金额”的记录，为避免重复录入，请仔细核对。</p>
                             </div>
-                            <p><strong>来宾姓名:</strong> <span class="text-lg">${name}</span></p>
+                            <p><strong>来宾姓名:</strong> <span class="text-lg">${safeName}</span></p>
                             <p><strong>金额:</strong> <span class="font-bold text-xl themed-text">${Utils.formatCurrency(amount)}</span></p>
                             ${remarkInputsHTML}
                           </div>`;
@@ -4405,9 +4853,9 @@
             modalContent = `
                           <div class="space-y-3 text-left">
                             <div class="p-2 bg-yellow-100 text-yellow-800 rounded-md text-sm">
-                              <strong>注意：</strong>系统中已存在名为 <strong>${name}</strong> 的记录。为避免混淆，建议您添加备注。
+                              <strong>注意：</strong>系统中已存在名为 <strong>${safeName}</strong> 的记录。为避免混淆，建议您添加备注。
                             </div>
-                            <p><strong>来宾姓名:</strong> <span class="text-lg">${name}</span></p>
+                            <p><strong>来宾姓名:</strong> <span class="text-lg">${safeName}</span></p>
                             <p><strong>金额:</strong> <span class="font-bold text-xl themed-text">${Utils.formatCurrency(amount)}</span></p>
                             ${remarkInputsHTML}
                           </div>`;
@@ -4415,10 +4863,10 @@
             modalTitle = "请确认录入信息";
             modalContent = `
                           <div class="space-y-3 text-left">
-                            <p><strong>来宾姓名:</strong> <span class="text-lg">${name}</span></p>
+                            <p><strong>来宾姓名:</strong> <span class="text-lg">${safeName}</span></p>
                             <p><strong>数字金额:</strong> <span class="font-bold text-xl themed-text">${Utils.formatCurrency(amount)}</span></p>
                             <p><strong>大写金额:</strong> <span class="font-bold text-xl themed-text">${Utils.amountToChinese(amount)}</span></p>
-                            ${remarkDisplay ? `<p><strong>备注:</strong> ${remarkDisplay}</p>` : ""}
+                            ${safeRemarkDisplay ? `<p><strong>备注:</strong> ${safeRemarkDisplay}</p>` : ""}
                           </div>`;
           }
 
@@ -4434,9 +4882,7 @@
           ]);
         }
 
-        /**
-         * 打开副屏窗口
-         */
+        /** 打开副屏窗口 */
         openGuestScreen() {
           if (!this.currentEvent) {
             this.ui.showNotification("请先进入一个事项。", "error");
@@ -4452,18 +4898,21 @@
          * @param {Object} giftData - 礼金数据
          */
         async saveGift(giftData) {
-          const isOutOfTime = new Date() < new Date(this.currentEvent.startDateTime) || new Date() > new Date(this.currentEvent.endDateTime);
-
-          if (isOutOfTime) {
-            const password = await this.requestAdminPassword("礼金补录", "当前已超出有效录入时间,请输入管理密码进行补录。", null, false);
-            if (password === null) {
-              this.ui.closeModal();
-              return;
-            }
-          }
+          // 防重复提交：确认弹窗中快速双击“确认提交”或连按回车会并发触发两次，避免同一条记录被重复写入
+          if (this.saveGiftInFlight) return;
+          this.saveGiftInFlight = true;
 
           try {
-            // 默认等级为 0（雅宾）
+            const isOutOfTime = new Date() < new Date(this.currentEvent.startDateTime) || new Date() > new Date(this.currentEvent.endDateTime);
+
+            if (isOutOfTime) {
+              const password = await this.requestAdminPassword("礼金补录", "当前已超出有效录入时间,请输入账号密码进行补录。", null, false);
+              if (password === null) {
+                this.ui.closeModal();
+                return;
+              }
+            }
+            // 默认等级为 0（普宾）
             const guestLevel = giftData.guestLevel !== undefined ? giftData.guestLevel : 0;
 
             // timestamp 放入 encryptedData，用于显示创建/修改时间
@@ -4472,15 +4921,32 @@
               timestamp: new Date().toISOString(),
               guestLevel,
             };
+            // 防御：会话密钥缺失时禁止写入，避免用空口令加密导致永久无法解密
+            if (!this.currentPassword) {
+              this.ui.closeModal();
+              this.ui.showNotification("登录状态异常，请重新登录后再录入。", "error");
+              this.forceLogout();
+              return;
+            }
             const encryptedData = CryptoService.encrypt(fullGiftData, this.currentPassword);
 
             // levelUpdateTime 默认为 0（未修改过等级）
-            const newGiftId = await this.giftRepository.createGift({
+            // 注意：createGift 返回服务端创建的完整礼金 DTO，需取其中的 id
+            const createdGift = await this.giftRepository.createGift({
               eventId: this.currentEvent.id,
               encryptedData,
               guestLevelWeight: guestLevel,
               levelUpdateTime: 0, // 新增时为 0，表示未修改过等级
             });
+            const newGiftId = createdGift?.id;
+
+            // 服务端异常未返回 id 时，回退为整表重新加载，避免新记录不可见也无法定位/修改
+            if (!newGiftId) {
+              await this.giftManager.loadGiftsForCurrentEvent();
+              this.ui.closeModal();
+              this.giftManager.render();
+              return;
+            }
 
             // 优化：直接插入新记录到内存，避免重新查询
             const newGift = {
@@ -4502,15 +4968,18 @@
             // 跳转到新记录所在页
             const newIndex = this.gifts.findIndex((g) => g.id === newGiftId);
             if (newIndex !== -1) {
-              this.currentPage = Math.floor(newIndex / app.getItemsPerPage()) + 1;
+              this.currentPage = Math.floor(newIndex / this.getItemsPerPage()) + 1;
             }
+
+            // 先解密目标页再渲染，避免跳页后未解密记录显示为空白单元格
+            this.giftManager.ensureCurrentPageDecrypted();
+            this.giftManager.render();
 
             this.ui.closeModal();
             this.ui.elements.addGiftForm.reset();
             document.querySelector('input[name="payment-type"][value="现金"]').checked = true;
             this.resetRemarkPresets();
             this.ui.elements.guestNameInput.focus();
-            this.giftManager.render();
             this.speakGift(giftData.name, giftData.amount);
             this.ui.showNotification("录入成功！", "success");
             this.guestScreenService.syncToGuestScreen();
@@ -4518,6 +4987,9 @@
             this.ui.closeModal();
             console.error("录入失败:", error);
             this.ui.showNotification("录入失败，请重试。", "error");
+          } finally {
+            // 无论成功 / 失败 / 取消补录，都要释放锁，保证下次录入正常进行
+            this.saveGiftInFlight = false;
           }
         }
 
@@ -4533,6 +5005,8 @@
           }
 
           const results = [];
+          // 搜索需遍历全量数据：先同步解密所有记录，避免懒加载期间未解密记录被漏检
+          this.giftManager.ensureAllGiftsDecrypted();
           for (let i = 0; i < this.gifts.length; i++) {
             // 确保解密后的 data 存在
             if (this.gifts[i].data?.name.includes(searchTerm)) {
@@ -4552,12 +5026,12 @@
               const remarkText = this.formatRemarkDisplay(giftData.remarkData || null);
 
               // 只有当 remarkText 有内容时，才生成备注的HTML
-              const remarkHtml = remarkText ? `<p class="text-sm text-red-500 mt-1"><strong>备注:</strong> ${remarkText}</p>` : "";
+              const remarkHtml = remarkText ? `<p class="text-sm text-red-500 mt-1"><strong>备注:</strong> ${Utils.escapeHtml(remarkText)}</p>` : "";
 
               return `
                         <div class="p-3 border-b flex justify-between items-center">
                           <div>
-                            <p><strong>姓名:</strong> ${giftData.name}</p>
+                            <p><strong>姓名:</strong> ${Utils.escapeHtml(giftData.name)}</p>
                             <p><strong>金额:</strong> ${giftData.amount.toFixed(2)} 元 (${giftData.type})</p>
                             ${remarkHtml}
                           </div>
@@ -4567,7 +5041,7 @@
             })
             .join("");
 
-          this.ui.showModal(`"${searchTerm}" 的搜索结果`, `<div class="max-h-80 overflow-y-auto">${resultsHtml}</div>`, [{ text: "关闭", class: "themed-button-secondary border px-4 py-2 rounded" }]);
+          this.ui.showModal(`"${Utils.escapeHtml(searchTerm)}" 的搜索结果`, `<div class="max-h-80 overflow-y-auto">${resultsHtml}</div>`, [{ text: "关闭", class: "themed-button-secondary border px-4 py-2 rounded" }]);
 
           setTimeout(() => {
             document.querySelectorAll(".view-details-btn").forEach((btn) => {
@@ -4634,7 +5108,7 @@
                             ? `
                           <div class="p-3 bg-red-50  border-red-500 text-red-800 rounded">
                             <p class="font-bold flex items-center"><i class="ri-error-warning-line mr-2"></i>此记录已作废。</p>
-                            <p class="text-sm mt-1"><strong>作废理由：</strong>${g.abolishReason || "无"}</p>
+                            <p class="text-sm mt-1"><strong>作废理由：</strong>${Utils.escapeHtml(g.abolishReason || "无")}</p>
                             <p class="text-xs text-gray-600 mt-1">作废时间：${new Date(g.abolishTime).toLocaleString("zh-CN")}</p>
                           </div>
                         `
@@ -4643,7 +5117,7 @@
 
                         <div id="name-display-area" class="flex justify-between items-center p-2 hover:bg-gray-50 rounded ${isAbolished ? "opacity-60" : ""}">
                           <div class="flex items-center gap-3 flex-wrap">
-                            <div><strong>姓名:</strong> <span class="text-lg ml-2">${g.name}</span></div>
+                            <div><strong>姓名:</strong> <span class="text-lg ml-2">${Utils.escapeHtml(g.name)}</span></div>
                             ${
                               !isAbolished
                                 ? `
@@ -4662,7 +5136,7 @@
                         <div id="amount-display-area" class="flex justify-between items-center p-2 hover:bg-gray-50 rounded ${isAbolished ? "opacity-60" : ""}">
                           <div>
                             <p><strong>金额:</strong> <span class="font-bold themed-text text-lg ml-2 ${isAbolished ? "line-through" : ""}">${Utils.formatCurrency(g.amount)}</span></p>
-                            <p class="text-sm text-gray-500 mt-1"><strong>类型:</strong> ${g.type}</p>
+                            <p class="text-sm text-gray-500 mt-1"><strong>类型:</strong> ${Utils.escapeHtml(g.type)}</p>
                           </div>
                           ${modifyAmountButtonHtml}
                         </div>
@@ -4719,7 +5193,7 @@
                 { text: "关闭", class: "themed-button-secondary border px-4 py-2 rounded" },
               ];
 
-          this.ui.showModal(`${g.name} 的礼金详情 ${hasHistory ? '<p class="text-sm text-orange-600 font-normal">（警告：此宾客数据存在修改，请自行验证数据真实性！）</p>' : ""}`, modalContent, modalButtons);
+          this.ui.showModal(`${Utils.escapeHtml(g.name)} 的礼金详情 ${hasHistory ? '<p class="text-sm text-orange-600 font-normal">（警告：此宾客数据存在修改，请自行验证数据真实性！）</p>' : ""}`, modalContent, modalButtons);
 
           // 绑定编辑和作废按钮事件
           setTimeout(() => {
@@ -4738,8 +5212,8 @@
                 const newLevel = parseInt(e.target.value, 10);
                 const oldLevel = g.guestLevel !== undefined ? g.guestLevel : 0;
                 if (newLevel !== oldLevel) {
-                  const oldLevelName = CONFIG.GUEST_LEVELS[oldLevel];
-                  const newLevelName = CONFIG.GUEST_LEVELS[newLevel];
+                  const oldLevelName = CONFIG.GUEST_LEVELS[oldLevel] || CONFIG.GUEST_LEVELS[0] || "";
+                  const newLevelName = CONFIG.GUEST_LEVELS[newLevel] || CONFIG.GUEST_LEVELS[0] || "";
 
                   // 需要验证密码，但支持N分钟免密
                   const password = await this.requestAdminPassword("修改宾客等级", `即将把 "${g.name}" 从 "${oldLevelName}" 修改为 "${newLevelName}"`, null);
@@ -4762,9 +5236,7 @@
           }, 50);
         }
 
-        /**
-         * 礼簿样式设置
-         */
+        /** 礼簿样式设置 */
         async showGiftBookStyleModal() {
           if (Utils.isMobile()) {
             this.ui.showNotification("移动端请使用默认样式", "info");
@@ -4781,7 +5253,7 @@
               amountChinese: { size: 20, color: "#333333", font: "" },
               coverText: { size: 30, color: "#f5d4ab", font: "" },
               pageInfo: {
-                themeColor: isSolemn ? "#1f2937" : "#b91c1c",
+                themeColor: isSolemn ? "#374151" : "#ec403c",
                 baseColor: isSolemn ? "#1f2937" : "#1f2937",
                 font: "",
               },
@@ -4804,7 +5276,7 @@
             ...(this.currentEvent.printOptions || {}),
           };
 
-          // === 4. 构建文字样式 HTML (使用配置数组) ===
+          // 4. 构建文字样式 HTML (使用配置数组)
           const fieldConfigs = [
             { key: "name", label: "礼簿页姓名", type: "std" },
             { key: "type", label: "礼簿页标签 (礼金/贺礼)", type: "std" },
@@ -4912,7 +5384,7 @@
             })
             .join("");
 
-          // === HTML 构建 ===
+          // HTML 构建
           // 统一 ID 命名规范： style-cover-* 和 style-bg-*
           const content = `
               <div class="space-y-6 text-left max-h-[75vh] pr-1">
@@ -4986,7 +5458,7 @@
                     <div class="flex gap-2 text-sm items-center">
                         <label class="block text-sm font-bold text-gray-700 mr-1">礼簿每页显示条数:</label>
                         <div class="flex items-center gap-2">
-                            <input type="number" id="style-items-per-page" min="6" max="20" step="1" value="${this.getItemsPerPage()}"
+                            <input type="number" id="style-items-per-page" min="6" max="24" step="1" value="${this.getItemsPerPage()}"
                                 class="w-12 p-2 border border-gray-300 rounded themed-ring text-center font-bold bg-white">
                             <span class="text-xs text-gray-500">建议 10-20</span>
                         </div>
@@ -5019,9 +5491,10 @@
             {
               text: "保存设置",
               class: "themed-button-primary px-6 py-2 rounded font-bold",
+              keepOpen: true, // 校验失败时保持弹窗打开，可修正后重新保存
               handler: async () => {
                 try {
-                  // --- 背景图 ---
+                  // 背景图
                   const bgFile = document.getElementById("style-bg-upload")?.files[0];
                   const isBgRemoved = document.getElementById("style-bg-preview-area").classList.contains("hidden");
 
@@ -5036,7 +5509,7 @@
                     await ImageCache.deleteBackground(this.currentEvent.id);
                   }
 
-                  // --- 封面图 ---
+                  // 封面图
                   const coverFile = document.getElementById("style-cover-upload")?.files[0];
                   const isCoverRemoved = document.getElementById("style-cover-preview-area").classList.contains("hidden");
                   const isCoverCustom = document.getElementById("style-cover-toggle").checked;
@@ -5054,7 +5527,7 @@
                     await ImageCache.deleteEventCover(this.currentEvent.id);
                   }
 
-                  // === 保存打印选项 ===
+                  // 保存打印选项
                   const pdfEngine = this.currentEvent.printOptions?.pdfEngine || "browser";
                   const newPrintOptions = {
                     printCover: document.getElementById("style-print-cover").checked,
@@ -5065,7 +5538,7 @@
                     pdfEngine: pdfEngine,
                   };
 
-                  // === 保存文字样式 ===
+                  // 保存文字样式
                   const currentDefaults = getDefaults();
                   const newStyle = { localFonts: this.currentEvent.customStyle?.localFonts || [] };
 
@@ -5106,7 +5579,16 @@
                   });
 
                   const itemsPerPageInput = document.getElementById("style-items-per-page");
-                  let newItemsPerPage = Math.min(Math.max(parseInt(itemsPerPageInput.value) || 12, 6), 24);
+                  const rawItemsPerPage = parseInt(itemsPerPageInput.value, 10);
+                  if (isNaN(rawItemsPerPage)) {
+                    this.ui.showNotification("请填写每页显示条数（6-24）", "error");
+                    return;
+                  }
+                  if (rawItemsPerPage < 6 || rawItemsPerPage > 24) {
+                    this.ui.showNotification(`每页显示条数需在 6-24 之间（当前输入 ${rawItemsPerPage}），请修正后重试`, "error");
+                    return;
+                  }
+                  const newItemsPerPage = rawItemsPerPage;
 
                   this.currentEvent.itemsPerPage = newItemsPerPage;
                   this.currentEvent.customStyle = newStyle;
@@ -5134,7 +5616,7 @@
             },
           ]);
 
-          // === 事件绑定 ===
+          // 事件绑定
           setTimeout(() => {
             // 辅助函数：绑定图片预览/移除逻辑
             const bindImageLogic = (prefix) => {
@@ -5249,9 +5731,7 @@
           }, 50);
         }
 
-        /**
-         * 应用自定义礼簿样式到屏幕 + 打印变量
-         */
+        /** 应用自定义礼簿样式到屏幕 + 打印变量 */
         async applyCustomGiftBookStyle() {
           const s = this.currentEvent?.customStyle || {};
           const root = document.documentElement;
@@ -5282,7 +5762,7 @@
           const itemsCount = this.getItemsPerPage();
           root.style.setProperty("--gift-grid-columns", itemsCount.toString());
 
-          // === 更新：字段映射与变量应用 ===
+          // 更新：字段映射与变量应用
           const stdFields = { name: "name", type: "type", amountChinese: "amount-chinese", coverText: "cover-text" };
           Object.entries(stdFields).forEach(([field, cssPrefix]) => {
             const cfg = s[field];
@@ -5305,7 +5785,8 @@
           const baseFontVar = "--custom-print-base-font";
 
           if (pInfo.themeColor) root.style.setProperty(themeColorVar, pInfo.themeColor);
-          else root.style.removeProperty(themeColorVar);
+          // 未自定义主题色时按事项主题回退默认值，与 PDF 引擎（喜庆 #ec403c / 肃穆 #374151）保持一致
+          else root.style.setProperty(themeColorVar, this.currentEvent.theme === "theme-solemn" ? "#374151" : "#ec403c");
 
           if (pInfo.baseColor) root.style.setProperty(baseColorVar, pInfo.baseColor);
           else root.style.removeProperty(baseColorVar);
@@ -5338,10 +5819,10 @@
 
             const content = `
                         <div class="space-y-2 p-4 bg-gray-100 rounded text-left">
-                          <p><strong>姓名:</strong> ${snapshot.name}</p>
+                          <p><strong>姓名:</strong> ${Utils.escapeHtml(snapshot.name)}</p>
                           <p><strong>金额:</strong> ${Utils.formatCurrency(snapshot.amount)} (${snapshot.type})</p>
                           <p><strong>宾客等级:</strong> ${snapshotLevelName}</p>
-                          <p><strong>备注:</strong> ${remarkDisplay || "无"}</p>
+                          <p><strong>备注:</strong> ${Utils.escapeHtml(remarkDisplay || "无")}</p>
                           <p class="text-xs text-gray-500 border-t pt-2 mt-2">此记录于 ${new Date(history[historyIndex].timestamp).toLocaleString()} 被修改存档。</p>
                         </div>
                       `;
@@ -5680,8 +6161,8 @@
         /**
          * 更新宾客等级
          * @param {number} giftIndex - 礼金索引
-         * @param {number} newLevel - 新等级索引 (0-4)
-         * @param {number} oldLevel - 旧等级索引 (0-4)
+         * @param {number} newLevel - 新等级索引 (0-100)
+         * @param {number} oldLevel - 旧等级索引 (0-100)
          */
         async updateGuestLevel(giftIndex, newLevel, oldLevel) {
           try {
@@ -5690,8 +6171,8 @@
             const now = new Date().toISOString();
             const newlevelUpdateTime = Date.now();
 
-            const oldLevelName = CONFIG.GUEST_LEVELS[oldLevel];
-            const newLevelName = CONFIG.GUEST_LEVELS[newLevel];
+            const oldLevelName = CONFIG.GUEST_LEVELS[oldLevel] || CONFIG.GUEST_LEVELS[0] || "";
+            const newLevelName = CONFIG.GUEST_LEVELS[newLevel] || CONFIG.GUEST_LEVELS[0] || "";
 
             // 等级变化，记录历史，更新 levelUpdateTime
             const historyEntry = {
@@ -5727,7 +6208,9 @@
             this.giftManager.sortGiftsByLevel();
 
             const newIndex = this.gifts.findIndex((g) => g.id === updatedGiftId);
-            this.currentPage = newIndex !== -1 ? Math.floor(newIndex / app.getItemsPerPage()) + 1 : this.currentPage;
+            this.currentPage = newIndex !== -1 ? Math.floor(newIndex / this.getItemsPerPage()) + 1 : this.currentPage;
+            // 先解密目标页再渲染，避免跳页后未解密记录显示为空白单元格
+            this.giftManager.ensureCurrentPageDecrypted();
             this.giftManager.render();
 
             this.ui.closeModal();
@@ -5740,15 +6223,15 @@
         }
 
         /**
-         * 统一的管理员密码校验方法
+         * 统一的账号密码校验方法
          * @param {string} title - 弹窗标题
          * @param {string} message - 提示信息
-         * @param {string} expectedHash - 期望的密码哈希值（可选，默认使用当前事项）
+         * @param {string} expectedHash - 期望的密码哈希值（可选，默认使用当前账号的密码哈希）
          * @param {boolean} forceVerify - 是否强制验证（true 时必须输入密码，不使用免密缓存）
          * @returns {Promise<string|null>} 返回原始密码（成功）或 null（取消/错误）
          */
         async requestAdminPassword(title, message = "", expectedHash = null, forceVerify = false) {
-          const hashToCompare = expectedHash || this.currentEvent.passwordHash;
+          const hashToCompare = expectedHash || this.accountPasswordHash;
 
           // 如果不强制验证，尝试从缓存中获取密码
           if (!forceVerify) {
@@ -5761,8 +6244,8 @@
           return new Promise((resolve) => {
             this.ui.elements.modal.classList.remove("modal-large");
             const content = `
-                        ${(message && `<p class="text-sm text-gray-600 mb-3">${message}</p>`) || ""}
-                        <input type="password" id="admin-pwd-input" class="w-full p-2 border rounded themed-ring" placeholder="请输入管理密码">
+                        ${(message && `<p class="text-sm text-gray-600 mb-3">${Utils.escapeHtml(message)}</p>`) || ""}
+                        <input type="password" id="admin-pwd-input" class="w-full p-2 border rounded themed-ring" placeholder="请输入账号密码">
                       `;
 
             this.ui.showModal(title, content, [
@@ -5770,6 +6253,7 @@
               {
                 text: "确认",
                 class: "themed-button-primary px-4 py-2 rounded",
+                keepOpen: true, // 密码错误时保持弹窗打开，可重新输入
                 handler: () => {
                   const inputPassword = document.getElementById("admin-pwd-input").value;
                   const isCorrect = CryptoService.hash(inputPassword) === hashToCompare;
@@ -5782,10 +6266,11 @@
                         this.cacheAdminPassword(inputPassword, hashToCompare);
                       }
                     }
+                    this.ui.closeModal();
                     resolve(inputPassword); // 返回原始密码
                   } else {
                     this.ui.showNotification("密码错误，请重新输入。", "error");
-                    resolve(null); // 密码错误
+                    // 不 resolve、不关闭弹窗，等待用户重新输入或取消
                   }
                 },
               },
@@ -5800,7 +6285,7 @@
                 const minutes = CONFIG.PASSWORD_CACHE_DURATION;
                 checkboxDiv.innerHTML = `
                             <input type="checkbox" id="skip-verify-5min" class="w-4 h-4  rounded themed-ring cursor-pointer">
-                            <label for="skip-verify-5min" class="ml-2 text-sm text-gray-600 cursor-pointer select-none whitespace-nowrap">${minutes}分钟内不再校验管理密码</label>
+                            <label for="skip-verify-5min" class="ml-2 text-sm text-gray-600 cursor-pointer select-none whitespace-nowrap">${minutes}分钟内不再校验账号密码</label>
                           `;
                 actionsContainer.insertBefore(checkboxDiv, actionsContainer.firstChild);
               }
@@ -5810,7 +6295,7 @@
         }
 
         /**
-         * 缓存管理员密码 - N 分钟有效
+         * 缓存账号密码 - N 分钟有效
          * @param {string} password - 原始密码
          * @param {string} passwordHash - 密码哈希值（作为加密密钥）
          */
@@ -5820,12 +6305,12 @@
         }
 
         /**
-         * 从缓存中获取管理员密码
+         * 从缓存中获取账号密码
          * @returns {string|null} 返回密码或 null（如果过期或不存在）
          */
         getCachedAdminPassword() {
           if (!this.currentEvent) return null;
-          return this.passwordCache.retrieve(this.currentEvent.id, this.currentEvent.passwordHash);
+          return this.passwordCache.retrieve(this.currentEvent.id, this.accountPasswordHash);
         }
 
         /**
@@ -5894,7 +6379,6 @@
         updateRemarkInputs() {
           const container = document.getElementById("remark-inputs-container");
 
-          // 保存当前值
           const currentValues = {};
           container.querySelectorAll("[data-remark-type]").forEach((input) => {
             currentValues[input.dataset.remarkType] = input.value;
@@ -5915,7 +6399,7 @@
                         <input type="text" class="flex-1 p-2 border rounded themed-ring"
                               data-remark-type="${preset}"
                               placeholder="请输入${remarkConfig.label}"
-                              value="${currentValues[preset] || ""}">
+                              value="${Utils.escapeHtml(currentValues[preset] || "")}">
                       `;
                 container.appendChild(inputDiv);
               }
@@ -5929,16 +6413,11 @@
          * @returns {Object} 备注对象
          */
         collectRemarkData(isEdit) {
-          // 确定查找的范围 (上下文)
-          // scope为真，说明是弹窗，范围是 #modal-content
-          // 否则说明是主界面，范围是 #add-gift-form (这是您的思路)
-
           const scope = isEdit ? document.getElementById("modal-content") : this.ui.elements.addGiftForm;
           // 如果找不到范围，直接返回空，增加代码健壮性
           if (!scope) return {};
 
           const remarkData = {};
-          // 2. 在确定的范围内，查找所有带 data-remark-type 属性的输入元素
           scope.querySelectorAll("[data-remark-type]").forEach((input) => {
             const type = input.dataset.remarkType;
             const value = input.value.trim();
@@ -5965,14 +6444,14 @@
               return `
                         <div class="mt-2">
                           <label class="font-medium text-gray-700 block mb-1">${label}：</label>
-                          <textarea data-remark-type="${key}" class="w-full p-2 border rounded themed-ring" rows="2" placeholder="${placeholder}">${value}</textarea>
+                          <textarea data-remark-type="${key}" class="w-full p-2 border rounded themed-ring" rows="2" placeholder="${placeholder}">${Utils.escapeHtml(value)}</textarea>
                         </div>
                       `;
             } else {
               return `
                         <div class="flex items-center">
                           <label class="font-medium text-gray-700 w-12">${label}：</label>
-                          <input type="text" data-remark-type="${key}" class="flex-1 p-2 border rounded themed-ring" placeholder="${placeholder}" value="${value}">
+                          <input type="text" data-remark-type="${key}" class="flex-1 p-2 border rounded themed-ring" placeholder="${placeholder}" value="${Utils.escapeHtml(value)}">
                         </div>
                       `;
             }
@@ -6035,9 +6514,9 @@
           this.REMARK_LABELS.forEach(({ key, label }) => {
             if (normalized[key]) {
               if (key === "custom") {
-                html += `<div class="mb-2">${normalized[key]}</div>`;
+                html += `<div class="mb-2">${Utils.escapeHtml(normalized[key])}</div>`;
               } else {
-                gridItems.push(`<div><span class="text-sm font-bold">${label}：</span>${normalized[key]}</div>`);
+                gridItems.push(`<div><span class="text-sm font-bold">${Utils.escapeHtml(label)}：</span>${Utils.escapeHtml(normalized[key])}</div>`);
               }
             }
           });
@@ -6059,10 +6538,9 @@
           return Object.keys(normalized).length > 0;
         }
 
-        /**
-         * 重置备注预设选项到默认状态
-         */
+        /** 重置备注预设选项到默认状态 */
         resetRemarkPresets() {
+          // 1. 清空已选择的备注预设
           this.selectedRemarkPresets.clear();
 
           // 2. 移除所有按钮的高亮状态
@@ -6138,9 +6616,7 @@
           speechSynthesis.speak(utterance);
         }
 
-        /**
-         * 显示事项设置对话框
-         */
+        /** 显示事项设置对话框 */
         async showEditEventInfoModal() {
           this.ui.elements.modal.classList.add("modal-large");
 
@@ -6152,7 +6628,7 @@
         <div class="space-y-4">
           <div>
             <label for="edit-event-name-input" class="block text-sm font-medium text-gray-700">事项名称</label>
-            <input type="text" id="edit-event-name-input" class="w-full mt-1 p-2 border rounded themed-ring" value="${this.currentEvent.name || ""}">
+            <input type="text" id="edit-event-name-input" class="w-full mt-1 p-2 border rounded themed-ring" value="${Utils.escapeHtml(this.currentEvent.name || "")}">
           </div>
 
           <div>
@@ -6256,7 +6732,7 @@
                 const datesChanged = newStartDateTime !== originalStartDateTime || newEndDateTime !== originalEndDateTime;
 
                 if (datesChanged) {
-                  const password = await this.requestAdminPassword("密码验证", "修改事项的起止日期，请输入管理密码以确认。", null, true);
+                  const password = await this.requestAdminPassword("密码验证", "修改事项的起止日期，请输入账号密码以确认。", null, true);
                   if (!password) {
                     this.ui.showNotification("已取消验证，修改未保存。", "info");
                     return;
@@ -6320,7 +6796,7 @@
 
         /**
          * 删除当前事项
-         * 强制要求导出备份并验证管理员密码
+         * 强制要求导出备份并验证账号密码
          */
         async deleteCurrentEvent() {
           if (!this.currentEvent) return;
@@ -6328,8 +6804,7 @@
           if (this.gifts.length === 0) {
             const password = await this.requestAdminPassword(
               "删除确认",
-              `<p>此操作将永久删除事项 \"<strong>${this.currentEvent.name}</strong>\"，无法恢复。</p>
-                      <p class=\"mt-4\">请输入管理密码以确认：</p>`,
+              `此操作将永久删除事项 "${this.currentEvent.name}"，无法恢复。请输入账号密码以确认：`,
               null
             );
 
@@ -6343,7 +6818,7 @@
 
               setTimeout(() => {
                 this.currentEvent = null;
-                this.currentPassword = null;
+                // 注意：currentPassword 是账号级加密密钥，与事项无关，删除事项后必须保留
                 this.gifts = [];
                 this.ui.showScreen("setup");
                 this.loadEvents();
@@ -6361,7 +6836,7 @@
                            <ol class="list-decimal pl-5 text-sm text-gray-700 space-y-1">
                              <li>点击下方“导出Excel备份”按钮，下载并保存到您的电脑。</li>
                              <li>确认已成功导出后，勾选“我已成功导出Excel备份”。</li>
-                             <li>系统会要求输入管理密码后才会执行删除。</li>
+                             <li>系统会要求输入账号密码后才会执行删除。</li>
                            </ol>
                            <label class="flex items-center mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100">
                              <input id="confirm-exported" type="checkbox" class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded">
@@ -6414,14 +6889,14 @@
                   this.ui.showNotification("请先导出 Excel，并勾选确认后再继续。", "error");
                   return;
                 }
-                const password = await this.requestAdminPassword("删除确认", `此操作将永久删除事项 \"<strong>${this.currentEvent.name}</strong>\" 及其所有礼金记录，且无法恢复。请输入管理密码以确认。`, null, true);
+                const password = await this.requestAdminPassword("删除确认", `此操作将永久删除事项 "${this.currentEvent.name}" 及其所有礼金记录，且无法恢复。请输入账号密码以确认。`, null, true);
                 if (password === null) return;
 
                 try {
                   const eventId = this.currentEvent.id;
                   const allGifts = await this.giftRepository.fetchGiftsByEvent(eventId);
                   for (const gift of allGifts) {
-                    await this.giftRepository.deleteGift(gift.id);
+                    await this.giftRepository.deleteGift(gift.id, eventId);
                   }
                   await this.giftRepository.deleteEvent(eventId);
 
@@ -6431,7 +6906,7 @@
 
                   setTimeout(() => {
                     this.currentEvent = null;
-                    this.currentPassword = null;
+                    // 注意：currentPassword 是账号级加密密钥，与事项无关，删除事项后必须保留
                     this.gifts = [];
                     this.ui.showScreen("setup");
                     this.loadEvents();
@@ -6457,8 +6932,6 @@
             }
           }, 10);
         }
-        /**
-         */
         getItemsPerPage() {
           const val = parseInt(this.currentEvent?.itemsPerPage);
           return val && val > 0 ? val : CONFIG.ITEMS_PER_PAGE;
@@ -6468,16 +6941,12 @@
       class ImageCache {
         static CACHE_NAME = "giftbook-assets-v1";
 
-        /**
-         * 获取事项封面的 Cache Key
-         */
+        /** 获取事项封面的 Cache Key */
         static getCoverKey(eventId) {
           return `/event-cover-${eventId}`;
         }
 
-        /**
-         * 获取事项背景图的 Cache Key
-         */
+        /** 获取事项背景图的 Cache Key */
         static getBackgroundKey(eventId) {
           return `/event-background-${eventId}`;
         }
@@ -6537,9 +7006,7 @@
           }
         }
 
-        /**
-         * 通用删除方法
-         */
+        /** 通用删除方法 */
         static async delete(key) {
           if ("caches" in window) {
             const cache = await caches.open(this.CACHE_NAME);
@@ -6547,7 +7014,7 @@
           }
         }
 
-        // --- 快捷业务方法 ---
+        // 快捷业务方法
 
         static async saveBackground(eventId, file) {
           this.deleteBackground(eventId);
@@ -6580,16 +7047,15 @@
       app
         .init()
         .then(() => {
-          console.log("礼簿系统专业版加载成功！");
+          console.log("系统加载成功！");
           console.log("系统架构: 类化、模块化、现代化");
           console.log("数据加密: AES-256");
-          console.log("数据存储: IndexedDB");
+          console.log("数据存储: 服务端 SQLite（礼金密文由客户端 AES-256 加密）");
         })
         .catch((error) => {
           console.error("? 系统启动失败:", error);
         });
 
-      // 语音列表更新
       if ("speechSynthesis" in window && window.speechSynthesis && speechSynthesis.onvoiceschanged !== undefined) {
         speechSynthesis.onvoiceschanged = () => {
           app.populateVoiceList();

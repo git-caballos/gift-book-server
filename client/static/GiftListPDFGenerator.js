@@ -1,13 +1,12 @@
 /**
- * GiftRegistryPDF - 样式配置优化版
- * 仅优化了配置解析和样式管理，核心绘图和布局逻辑保持原样，确保 PDF 输出完全一致。
+ * GiftRegistryPDF - 礼金簿 PDF 生成器
  */
 class GiftRegistryPDF {
     /**
      * 创建一个 PDF 生成器实例。
      */
     constructor(options) {
-        // 1. 默认配置合并 (更简洁的写法)
+        // 1. 默认配置合并
         const defaults = {
             letterSpacing: 4,
             title: '礼金簿',
@@ -27,12 +26,10 @@ class GiftRegistryPDF {
         this.pdfLib = PDFLib;
         this.pageSize = [841.89, 595.28]; // A4 横向
         
-        // 边距定义
         this.mainPageMargins = { top: 28, bottom: 35, left: 30, right: 30 };
         this.appendixMargins = { top: 70, bottom: 45, left: 60, right: 60 };
         this.footerMargins = { left: 30, right: 30 };
 
-        // 资源状态
         this.resources = {
             fontBytes: null, amountFontBytes: null, formalFontBytes: null,
             giftLabelFontBytes: null, coverFontBytes: null,
@@ -72,8 +69,7 @@ class GiftRegistryPDF {
             }
         };
 
-        // 2. 定义常用颜色画笔
-        // 直接复用 rgb 对象，避免重复实例化
+        // 2. 定义常用颜色画笔（复用 rgb 对象，避免重复实例化）
         this.colors = {
             red: this.styles.pageInfo.themeColor,
             black: this.styles.pageInfo.baseColor,
@@ -122,16 +118,14 @@ class GiftRegistryPDF {
         return black;
     }
 
-    // =================================================================
-    // 下方的逻辑保持原样，以保证布局绝对安全
-    // =================================================================
-
     async _loadResources() {
         if (this.resources.loaded) return;
 
         const fetchResource = async (url) => {
             if (!url) return null;
             const response = await fetch(url);
+            // 资源缺失（404）或网络错误：返回 null 交由下方兜底链处理，而不是让 embedFont 崩溃
+            if (!response.ok) return null;
             return new Uint8Array(await response.arrayBuffer());
         };
 
@@ -165,7 +159,8 @@ class GiftRegistryPDF {
     _processData(data) {
         const validData = data.filter(item => !item.abolished);
         const grandTotal = validData.reduce((sum, item) => sum + item.amount, 0);
-        const remarks = data
+        // 统计、附录、页数一律基于有效记录（不含作废），与打印引擎口径一致
+        const remarks = validData
             .map((item, index) => ({
                 name: item.name,
                 remark: item.remark,
@@ -173,7 +168,7 @@ class GiftRegistryPDF {
             }))
             .filter(r => r.remark && r.remark.trim());
 
-        const summary = data.reduce((acc, item) => {
+        const summary = validData.reduce((acc, item) => {
             const type = item.type || '其他';
             if (!acc[type]) acc[type] = { count: 0, total: 0 };
             acc[type].count++;
@@ -185,8 +180,8 @@ class GiftRegistryPDF {
             grandTotal,
             remarks,
             summary,
-            totalItems: data.length,
-            mainContentTotalPages: Math.ceil(data.length / this.options.itemsPerPage),
+            totalItems: validData.length,
+            mainContentTotalPages: Math.ceil(validData.length / this.options.itemsPerPage),
             validData
         };
     }
@@ -379,9 +374,20 @@ class GiftRegistryPDF {
 
         cursorY -= this._drawAppendixHeader(page, mainFont, cursorY, colWidths);
 
+        // 单页可用高度（含页眉/页脚上下边距）；换页判断依赖它避免死循环
+        const usableHeight = pageHeight - margin.top - margin.bottom;
+
         for (const row of remarks) {
             const { lines, height } = this._wrapText(row.remark, mainFont, 11, colWidths[2] - 12);
             const rowHeight = Math.max(30, height + 10);
+
+            // 防御：单条备注超出整页可用高度时强制在本页绘制（允许轻微溢出），
+            // 否则换新页后仍放不下，会反复 addPage 形成死循环卡死浏览器
+            if (rowHeight > usableHeight) {
+                this._drawAppendixRow(page, mainFont, row, cursorY, rowHeight, colWidths, lines);
+                cursorY -= rowHeight;
+                continue;
+            }
 
             if (cursorY - rowHeight < margin.bottom) {
                 pageBottoms[appendixPages.length - 1] = cursorY;
@@ -415,12 +421,15 @@ class GiftRegistryPDF {
     _wrapText(text, font, fontSize, maxWidth) {
         const lines = [];
         const paragraphs = String(text || "").split(/\r?\n/);
+        // 含中文（CJK）时按字符换行，避免英文分词逻辑在每个汉字之间插入空格
+        const isCJK = /[\u3000-\u303f\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff00-\uffef]/.test(text || "");
         for (const paragraph of paragraphs) {
             if (paragraph === '') { lines.push(''); continue; }
             let currentLine = '';
-            const words = paragraph.match(/[\w']+|[^\s\w]/g) || [];
+            const words = isCJK ? Array.from(paragraph) : paragraph.match(/[\w']+|[^\s\w]/g) || [];
+            const separator = isCJK ? "" : " ";
             for (const word of words) {
-                const testLine = currentLine ? `${currentLine} ${word}` : word;
+                const testLine = currentLine ? `${currentLine}${separator}${word}` : word;
                 if (font.widthOfTextAtSize(testLine, fontSize) <= maxWidth) {
                     currentLine = testLine;
                 } else {
@@ -437,7 +446,18 @@ class GiftRegistryPDF {
     async _drawImageOnPage(pdfDoc, page, imageBytes) {
         if (!imageBytes) return;
         try {
-            const image = await pdfDoc.embedJpg(imageBytes).catch(() => pdfDoc.embedPng(imageBytes));
+            // 同一文档内复用首次嵌入的图片对象，避免每页重复 embedJpg 使 PDF 体积随页数线性膨胀
+            let cache = this._imageCacheByDoc && this._imageCacheByDoc.get(pdfDoc);
+            if (!cache) {
+                cache = new Map();
+                if (!this._imageCacheByDoc) this._imageCacheByDoc = new WeakMap();
+                this._imageCacheByDoc.set(pdfDoc, cache);
+            }
+            let image = cache.get(imageBytes);
+            if (!image) {
+                image = await pdfDoc.embedJpg(imageBytes).catch(() => pdfDoc.embedPng(imageBytes));
+                cache.set(imageBytes, image);
+            }
             const { width, height } = page.getSize();
             page.drawImage(image, { x: 0, y: 0, width, height });
         } catch (error) { console.error("绘制图片失败:", error); }
@@ -612,16 +632,21 @@ class GiftRegistryPDF {
         pdfDoc.registerFontkit(fontkit);
 
         const fonts = {
-            mainFont: await pdfDoc.embedFont(this.resources.fontBytes, { subset: true }),
+            mainFont: this.resources.fontBytes ? await pdfDoc.embedFont(this.resources.fontBytes, { subset: true }) : null,
             giftLabelFont: this.resources.giftLabelFontBytes ? await pdfDoc.embedFont(this.resources.giftLabelFontBytes, { subset: true }) : null,
             formalFont: this.resources.formalFontBytes ? await pdfDoc.embedFont(this.resources.formalFontBytes, { subset: true }) : null,
             amountFont: this.resources.amountFontBytes ? await pdfDoc.embedFont(this.resources.amountFontBytes, { subset: true }) : null,
             coverFont: this.resources.coverFontBytes ? await pdfDoc.embedFont(this.resources.coverFontBytes, { subset: true }) : null
         };
+        // 主字体失败时回退到任一成功加载的字体，避免整个 PDF 生成崩溃
+        fonts.mainFont = fonts.mainFont || fonts.giftLabelFont || fonts.formalFont || fonts.amountFont;
         fonts.giftLabelFont = fonts.giftLabelFont || fonts.mainFont;
         fonts.formalFont = fonts.formalFont || fonts.mainFont;
         fonts.amountFont = fonts.amountFont || fonts.mainFont;
         fonts.coverFont = fonts.coverFont || fonts.formalFont;
+        if (!fonts.mainFont) {
+            throw new Error('主字体加载失败，请检查 static 目录下字体文件是否完整');
+        }
 
         const processedData = this._processData(data);
 

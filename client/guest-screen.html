@@ -4,13 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>礼簿展示屏</title>
-    <script src="./static/tailwindcss.js"></script>
     <link href="./static/remixicon.css" rel="stylesheet" />
-
     <link rel="stylesheet" href="./static/pell.min.css" />
-
+    <script src="./static/tailwindcss.js"></script>
     <style>
-      /* ==================== 主题变量 ==================== */
+      /* 主题变量 */
       :root,
       .theme-festive {
         --primary-color: #c00;
@@ -45,7 +43,7 @@
         height: 100vh;
       }
 
-      /* ==================== 动态布局 ==================== */
+      /* 动态布局 */
       #layout-root {
         display: flex;
         width: 100vw;
@@ -61,7 +59,7 @@
         display: none; /* 默认隐藏，由 JS 控制显示 */
         flex-direction: column;
         align-items: center;
-        /* 修改: 移除 justify-content: center 以允许 flex-grow 生效 */
+        /* 移除 justify-content: center 以允许 flex-grow 生效 */
         padding: 2rem 1.5rem;
       }
 
@@ -77,7 +75,7 @@
         position: relative;
       }
 
-      /* ==================== 收款码区域样式 ==================== */
+      /* 收款码区域样式 */
       .qr-container {
         display: flex;
         align-items: center;
@@ -120,7 +118,7 @@
         font-size: 1rem;
       }
 
-      /* ==================== 礼簿框架 (无修改) ==================== */
+      /* 礼簿框架 */
       .gift-book-frame {
         border: 6px solid var(--primary-color);
         padding: clamp(15px, 2vw, 30px);
@@ -146,7 +144,7 @@
       }
       .gift-book-row {
         display: grid;
-        grid-template-columns: repeat(12, minmax(0, 1fr));
+        grid-template-columns: repeat(var(--gift-grid-columns, 12), minmax(0, 1fr));
         width: 100%;
       }
       .book-cell {
@@ -235,7 +233,7 @@
         font-size: clamp(9px, 1.2vw, 14px);
       }
 
-      /* ==================== 顶部控件 (无修改) ==================== */
+      /* 顶部控件 */
       #top-right-controls {
         position:absolute;
         top: 20px;
@@ -266,7 +264,7 @@
         background-color: rgba(0, 0, 0, 0.05);
       }
 
-      /* ==================== 全屏提示 (无修改) ==================== */
+      /* 全屏提示 */
       #fullscreen-hint {
         position: fixed;
         bottom: 30px;
@@ -291,7 +289,7 @@
         }
       }
 
-      /* ==================== 弹窗样式 (无修改) ==================== */
+      /* 弹窗样式 */
       #modal-container {
         font-family: "Inter", "Microsoft YaHei", sans-serif;
       }
@@ -336,7 +334,7 @@
         color: var(--button-text-color);
       }
 
-      /* ==================== Pell.js CDN 样式适配 (无修改) ==================== */
+      /* Pell.js CDN 样式适配 */
       .pell-content {
         height: 120px;
         outline: 0;
@@ -441,6 +439,13 @@
       </div>
     </div>
 
+    <!-- 等待主页面连接时的占位提示（收到首个数据后自动移除） -->
+    <div id="waiting-overlay" style="position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.6);">
+      <div style="background: #fff; color: #374151; border-radius: 0.75rem; padding: 2rem 2.5rem; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
+        <p style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">正在等待主页面连接…</p>
+        <p style="font-size: 0.875rem; opacity: 0.7;">请从主页面点击「访客副屏」按钮打开本窗口</p>
+      </div>
+    </div>
 
     <div id="fullscreen-hint">按 F11 进入全屏以获得最佳效果</div>
 
@@ -455,15 +460,40 @@
     <script src="./static/pell.min.js"></script>
 
     <script>
-      /**
-       * 简易缓存管理器
-       */
+      /** 简易缓存管理器 */
       const CacheManager = {
         CACHE_NAME: "guest-screen-qr-cache",
         SETTINGS_KEY: "guest-screen-settings",
+        // 局域网 http 部署（非安全上下文）时 caches 不可用，退回 localStorage 存储 base64
+        IMG_FALLBACK_PREFIX: "guest-screen-qr-img:",
+
+        _canUseCache() {
+          return typeof caches !== "undefined" && window.isSecureContext !== false;
+        },
 
         async storeImage(key, file) {
           try {
+            if (!this._canUseCache()) {
+              const base64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+              });
+              // localStorage 配额有限（约 5MB 且与业务数据共享）：超限前拦截，避免保存"成功"实际丢失
+              if (base64.length > 1.5 * 1024 * 1024) {
+                throw new Error("图片过大，无法存入本地存储（上限约 1.5MB），请压缩后再试");
+              }
+              try {
+                localStorage.setItem(this.IMG_FALLBACK_PREFIX + key, base64);
+              } catch (e) {
+                if (e && (e.name === "QuotaExceededError" || e.code === 22)) {
+                  throw new Error("本地存储空间不足，无法保存图片，请压缩后再试");
+                }
+                throw e;
+              }
+              return;
+            }
             const cache = await caches.open(this.CACHE_NAME);
             const response = new Response(file);
             await cache.put(key, response);
@@ -475,6 +505,12 @@
 
         async getImage(key) {
           try {
+            if (!this._canUseCache()) {
+              const base64 = localStorage.getItem(this.IMG_FALLBACK_PREFIX + key);
+              if (!base64) return null;
+              const blob = await (await fetch(base64)).blob();
+              return blob;
+            }
             const cache = await caches.open(this.CACHE_NAME);
             const response = await cache.match(key);
             if (response) {
@@ -487,9 +523,13 @@
           }
         },
 
-        // 新增: 删除图片缓存
+        // 删除图片缓存
         async deleteImage(key) {
           try {
+            if (!this._canUseCache()) {
+              localStorage.removeItem(this.IMG_FALLBACK_PREFIX + key);
+              return;
+            }
             const cache = await caches.open(this.CACHE_NAME);
             await cache.delete(key);
             console.log(`Image ${key} deleted from cache.`);
@@ -520,6 +560,11 @@
         },
       };
 
+      // 工具函数：HTML 转义（防止宾客姓名等用户数据注入 HTML）
+      function escapeHtml(value) {
+        return String(value ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+      }
+
       // 工具函数：隐藏姓名
       function maskName(name, hidePrivacy, isLatest) {
         if (!hidePrivacy || isLatest) {
@@ -536,6 +581,8 @@
       class GuestScreen {
         constructor() {
           this.currentData = null;
+          this.connected = false;
+          this.readyTimer = null;
           this.cacheDOMElements();
         }
 
@@ -565,7 +612,7 @@
 
           this.pendingAlipayFile = null;
           this.pendingWechatFile = null;
-          // 新增: 标记是否清空
+          // 标记是否清空
           this.alipayCleared = false;
           this.wechatCleared = false;
         }
@@ -573,6 +620,11 @@
         init() {
           window.addEventListener("message", (e) => this.handleMessage(e));
           window.opener?.postMessage({ type: "guest_screen_ready" }, "*");
+          // 主页面刷新后 opener 仍有效但新页面无引用：周期性重发握手，直到收到首个数据
+          this.readyTimer = setInterval(() => {
+            if (this.connected) clearInterval(this.readyTimer);
+            window.opener?.postMessage({ type: "guest_screen_ready" }, "*");
+          }, 5000);
           this.bindControlEvents();
           this.loadAndApplySettings();
         }
@@ -601,9 +653,16 @@
         }
 
         handleMessage(event) {
+          // 仅接受同源窗口消息
+          if (event.origin !== window.location.origin) return;
           const { type, data } = event.data || {};
           switch (type) {
             case "guest_screen_update":
+              this.connected = true;
+              if (this.readyTimer) {
+                clearInterval(this.readyTimer);
+                this.readyTimer = null;
+              }
               this.updateDisplay(data);
               break;
             case "guest_screen_heartbeat":
@@ -614,6 +673,7 @@
         updateDisplay(data) {
           if (!data) return;
           this.currentData = data;
+          document.getElementById("waiting-overlay")?.remove();
           document.body.className = data.theme || "theme-festive";
           this.eventTitle.textContent = data.eventName || "礼簿";
           this.renderGiftBook(data);
@@ -622,7 +682,9 @@
 
         renderGiftBook(data) {
           const { gifts, hidePrivacy, typeText } = data;
-          const ITEMS_PER_PAGE = 12;
+          // 与主页面"礼簿每页显示条数"保持一致（主页面通过消息携带 itemsPerPage）
+          const ITEMS_PER_PAGE = data.itemsPerPage || 12;
+          this.giftBookContent.style.setProperty("--gift-grid-columns", ITEMS_PER_PAGE);
           const latestGiftId = gifts[gifts.length - 1]?.id;
           const displayGifts = [...gifts];
           while (displayGifts.length < ITEMS_PER_PAGE) {
@@ -640,7 +702,7 @@
             if (gift) {
               const isLatest = gift.id === latestGiftId;
               const displayName = maskName(gift.name, hidePrivacy, isLatest);
-              const formattedName = displayName.length === 2 ? `${displayName[0]}\u3000${displayName[1]}` : displayName;
+              const formattedName = escapeHtml(displayName.length === 2 ? `${displayName[0]}\u3000${displayName[1]}` : displayName);
               nameCell.innerHTML = `<div class="name ${displayName.length > 4 ? "scale" : ""}">${formattedName}</div>`;
               if (isLatest) nameCell.classList.add("latest-entry");
             }
@@ -706,8 +768,8 @@
         async showSettingsModal() {
           this.pendingAlipayFile = null;
           this.pendingWechatFile = null;
-          this.alipayCleared = false; // 重置状态
-          this.wechatCleared = false; // 重置状态
+          this.alipayCleared = false;
+          this.wechatCleared = false;
 
           const settings = CacheManager.getSettings();
           const currentLayout = settings.layout || "hidden";
@@ -802,7 +864,7 @@
           colorInput.type = "color";
           colorInput.className = "custom-pell-color";
           colorInput.title = "文字颜色";
-          colorInput.value = "var(--primary-color)";
+          colorInput.value = "#b91c1c"; // 颜色选择器要求具体色值，CSS 变量字符串不合法
           colorInput.onchange = () => {
             window.pell.exec("foreColor", colorInput.value);
             editor.content.focus();
@@ -904,7 +966,7 @@
             this.closeSettingsModal();
           } catch (error) {
             console.error("保存设置失败:", error);
-            alert("保存设置失败，请重试。");
+            alert(error.message || "保存设置失败，请重试。");
           }
         }
       }
