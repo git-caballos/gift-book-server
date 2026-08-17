@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const os = require('os');
 
 const authRoutes = require('./routes/auth');
 const eventRoutes = require('./routes/events');
@@ -42,30 +43,33 @@ const SERVE_STATIC = (process.env.SERVE_STATIC ?? 'true').toString().trim().toLo
 const { getDb, closeDb } = require('./db');
 getDb();
 
-// CORS：信任本地回环地址（任意端口），外加 CORS_ORIGINS 白名单（须完整 主机[:端口] 匹配）
+// CORS 放行模式（CORS_OPEN_MODE=true 开启，默认关闭）：开启后允许任意来源跨域，
+// 仅用于开发调试或对外演示，生产环境请保持关闭
+const CORS_OPEN_MODE = (process.env.CORS_OPEN_MODE ?? 'false').toString().trim().toLowerCase() === 'true';
+
+// CORS：除放行模式外，跨域仅放行 CORS_ORIGINS 白名单（须完整 origin 匹配，
+// 即 协议://主机[:端口]，如 http://localhost:8081、https://example.com，协议不同即视为不同来源）
 const CORS_ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || '')
   .split(',').map((s) => s.trim()).filter(Boolean)
   .map((s) => {
     try {
-      // 归一化为 "主机[:端口]"（如 http://192.168.1.100:8081 → "192.168.1.100:8081"）
-      return new URL(/^https?:\/\//i.test(s) ? s : `http://${s}`).host;
+      // 归一化为完整 origin（省略协议时补 http://；去尾斜杠；http:80/https:443 默认端口自动省略）
+      return new URL(/^https?:\/\//i.test(s) ? s : `http://${s}`).origin;
     } catch { return null; }
   })
   .filter(Boolean);
 
 app.use(cors({
   origin(origin, cb) {
+    if (CORS_OPEN_MODE) return cb(null, true); // 放行模式：允许所有来源与协议
     if (!origin) return cb(null, true); // 非浏览器请求（curl、同源导航等）直接放行
-    let hostname;
+    let normalized;
     try {
-      hostname = new URL(origin).hostname; // 畸形 Origin（如 "null"）解析失败即拒绝
+      normalized = new URL(origin).origin; // 畸形 Origin（如 "null"）解析失败即拒绝
     } catch {
       return cb(null, false);
     }
-    // 去除 IPv6 方括号（[::1] → ::1），统一识别回环地址
-    const normalizedHostname = hostname.replace(/^\[|\]$/g, '');
-    const isLocal = /^(localhost|127\.0\.0\.1|::1)$/i.test(normalizedHostname);
-    cb(null, isLocal || CORS_ALLOWED_ORIGINS.includes(new URL(origin).host));
+    cb(null, CORS_ALLOWED_ORIGINS.includes(normalized));
   },
 }));
 
@@ -96,6 +100,7 @@ app.use('/api', (req, res) => {
 if (SERVE_STATIC) {
   app.get('/', (req, res) => res.sendFile(path.join(CLIENT_ROOT, 'index.html')));
   app.get('/index.html', (req, res) => res.sendFile(path.join(CLIENT_ROOT, 'index.html')));
+  app.get('/local.html', (req, res) => res.sendFile(path.join(CLIENT_ROOT, 'local.html')));
   app.get('/guest-screen.html', (req, res) => res.sendFile(path.join(CLIENT_ROOT, 'guest-screen.html')));
   app.use('/static', express.static(STATIC_ROOT));
 }
@@ -114,8 +119,19 @@ app.use((err, req, res, next) => {
   res.status(status).json({ error: message });
 });
 
-const server = app.listen(SERVER_PORT, () => {
-  console.log(`礼簿服务已启动 → http://localhost:${SERVER_PORT}`);
+const server = app.listen(portNum, () => {
+  console.log(` 礼簿服务已启动，可通过以下地址访问：`);
+  console.log(`  - 本机: http://localhost:${portNum}`);
+  // 局域网：枚举所有网卡 IPv4 地址
+  const seen = new Set();
+  for (const name of Object.keys(os.networkInterfaces())) {
+    for (const net of os.networkInterfaces()[name] || []) {
+      if (net.family === 'IPv4' && !net.internal && !seen.has(net.address)) {
+        seen.add(net.address);
+        console.log(`  - 局域网: http://${net.address}:${portNum}`);
+      }
+    }
+  }
   console.log(`托管模式: ${SERVE_STATIC ? '已开启（托管前端）' : '已关闭（纯后端模式）'}`);
   console.log(`注册功能: ${process.env.REGISTRATION_ENABLED === 'true' ? '已开启' : '已关闭'}`);
 });

@@ -67,13 +67,15 @@ function wrapAsync(handler) {
   };
 }
 
-/** POST /api/auth/register — 注册（account 为登录账号，username 为显示名，可空） */
+/** POST /api/auth/register — 注册（account 为登录账号，username 为显示名，可空）
+ * 信封加密：客户端生成随机 DEK 并用密码派生的 KEK 包裹，kdfSalt/kdfIterations/dekEncrypted 随请求入库
+ */
 router.post('/register', wrapAsync(async (req, res) => {
   if (process.env.REGISTRATION_ENABLED !== 'true') {
     return res.status(403).json({ error: '注册功能已关闭' });
   }
 
-  const { account, username, password } = req.body || {};
+  const { account, username, password, kdfSalt, kdfIterations, dekEncrypted } = req.body || {};
   if (!account || !password) {
     return res.status(400).json({ error: '账号和密码不能为空' });
   }
@@ -84,6 +86,14 @@ router.post('/register', wrapAsync(async (req, res) => {
   }
   if (!password) {
     return res.status(400).json({ error: '密码不能为空' });
+  }
+
+  // 信封加密参数（必需）：客户端生成随机 DEK 并用密码派生的 KEK 包裹后随请求入库
+  const iterations = Number(kdfIterations);
+  if (typeof kdfSalt !== 'string' || !kdfSalt.trim() ||
+      !Number.isInteger(iterations) || iterations < 1 || iterations > 1000000 ||
+      typeof dekEncrypted !== 'string' || !dekEncrypted.trim()) {
+    return res.status(400).json({ error: '加密参数缺失或格式不正确' });
   }
 
   // 显示名：未填时默认用账号（acc 已保证非空，displayName 恒有值）
@@ -98,7 +108,8 @@ router.post('/register', wrapAsync(async (req, res) => {
   const hashed = await hashPassword(password);
   try {
     // 并发注册时先查后插存在竞态，INSERT 抛 UNIQUE 约束错误，统一转 409
-    db.prepare('INSERT INTO users (account, username, password) VALUES (?, ?, ?)').run(acc, displayName, hashed);
+    db.prepare('INSERT INTO users (account, username, password, kdf_salt, kdf_iterations, dek_encrypted) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(acc, displayName, hashed, String(kdfSalt).trim(), iterations, String(dekEncrypted).trim());
   } catch (err) {
     if (err && err.code && String(err.code).includes('UNIQUE')) {
       return res.status(409).json({ error: '账号已被占用' });
@@ -125,7 +136,7 @@ router.post('/login', wrapAsync(async (req, res) => {
   }
 
   const db = getDb();
-  const user = db.prepare('SELECT id, account, username, password, token_version FROM users WHERE account = ?').get(acc);
+  const user = db.prepare('SELECT id, account, username, password, token_version, kdf_salt, kdf_iterations, dek_encrypted FROM users WHERE account = ?').get(acc);
   if (!user) {
     recordLoginFail(acc);
     return res.status(401).json({ error: '账号或密码错误' });
@@ -149,8 +160,12 @@ router.post('/login', wrapAsync(async (req, res) => {
     ? process.env.JWT_EXPIRES_IN.trim()
     : '7d';
 
-  // 加密由客户端完成（账号密码作为密钥），服务端 JWT 仅承载用户身份；
-  // tokenVersion 用于改密后吊销旧令牌
+  // 加密由客户端完成（密码→KEK→解出 DEK），服务端 JWT 仅承载用户身份；
+  // kdf 返回客户端用于派生 KEK 并解开 DEK（kdf 为 null 表示旧版账号，前端将触发一次性升级）
+  const kdf = user.kdf_salt
+    ? { salt: user.kdf_salt, iterations: user.kdf_iterations, dekEncrypted: user.dek_encrypted }
+    : null;
+
   const token = generateToken(
     { id: user.id, account: user.account, username: user.username, tokenVersion: user.token_version },
     process.env.JWT_SECRET,
@@ -160,25 +175,38 @@ router.post('/login', wrapAsync(async (req, res) => {
   res.json({
     token,
     user: { id: user.id, account: user.account, username: user.username },
+    kdf,
   });
 }));
 
-/** GET /api/auth/me — 获取当前用户信息 */
+/** GET /api/auth/me — 获取当前用户信息（含信封加密参数，供会话恢复时解出 DEK） */
 router.get('/me', jwtAuth, (req, res) => {
-  res.json({ id: req.user.id, account: req.user.account, username: req.user.username });
+  const db = getDb();
+  const user = db.prepare('SELECT id, account, username, kdf_salt, kdf_iterations, dek_encrypted FROM users WHERE id = ?').get(req.user.id);
+  if (!user) {
+    return res.status(401).json({ error: '用户不存在' });
+  }
+  const kdf = user.kdf_salt
+    ? { salt: user.kdf_salt, iterations: user.kdf_iterations, dekEncrypted: user.dek_encrypted }
+    : null;
+  res.json({ id: user.id, account: user.account, username: user.username, kdf });
 });
 
 /** PUT /api/auth/password — 修改密码（校验旧密码）
- * 事务内先重写全部礼金密文（客户端用新密码加密后随请求提交），再更新密码哈希；
- * 任一步失败整体回滚，避免"密码已改但数据仍用旧密钥加密而永久无法解密"
+ * 信封加密下改密为 O(1) 操作：数据密钥（DEK）不变，仅用新密码派生的 KEK 重新包裹 DEK，
+ * 完全无需遍历/重写任何礼金记录（旧版"全量重加密"逻辑已移除）。
+ * 客户端提交：oldPassword、newPassword、kdfSalt、kdfIterations、dekEncrypted（新 KEK 包裹后的 DEK 密文）
  */
 router.put('/password', jwtAuth, wrapAsync(async (req, res) => {
-  const { oldPassword, newPassword, reencryptedGifts } = req.body || {};
+  const { oldPassword, newPassword, kdfSalt, kdfIterations, dekEncrypted } = req.body || {};
   if (!oldPassword || !newPassword) {
     return res.status(400).json({ error: '旧密码和新密码不能为空' });
   }
-  if (reencryptedGifts !== undefined && !Array.isArray(reencryptedGifts)) {
-    return res.status(400).json({ error: 'reencryptedGifts 必须是数组' });
+  const iterations = Number(kdfIterations);
+  if (typeof kdfSalt !== 'string' || !kdfSalt.trim() ||
+      !Number.isInteger(iterations) || iterations < 1 || iterations > 1000000 ||
+      typeof dekEncrypted !== 'string' || !dekEncrypted.trim()) {
+    return res.status(400).json({ error: '加密参数缺失或格式不正确，请重新登录后重试' });
   }
 
   const db = getDb();
@@ -192,66 +220,15 @@ router.put('/password', jwtAuth, wrapAsync(async (req, res) => {
     return res.status(400).json({ error: '旧密码错误' });
   }
 
-  const giftList = reencryptedGifts || [];
-
-  // 前置校验密文格式与 id 唯一性，避免重复 id 绕过数量校验、改密后部分礼金永久无法解密
-  const seenIds = new Set();
-  for (const gift of giftList) {
-    if (!gift || !Number.isInteger(gift.id) || typeof gift.encryptedData !== 'string') {
-      return res.status(400).json({ error: '礼金数据格式不正确' });
-    }
-    if (seenIds.has(gift.id)) {
-      return res.status(400).json({ error: '礼金数据包含重复记录，请刷新后重试' });
-    }
-    seenIds.add(gift.id);
-  }
-
-  // 校验数量与归属须在事务内进行：hashPassword 的异步间隙（bcrypt 约百毫秒）可能有
-  // 并发写入新礼金，事务外校验会让漏传的礼金仍用旧密钥加密、改密后永久无法解密
-
   const hashed = await hashPassword(newPassword);
 
-  try {
-    const changePassword = db.transaction(() => {
-      // 事务内重查总数与归属（better-sqlite3 事务同步执行、事件循环不让步，关闭竞态窗口）
-      const totalGifts = db.prepare(
-        'SELECT COUNT(*) AS count FROM gifts WHERE event_id IN (SELECT id FROM events WHERE user_id = ?)'
-      ).get(req.user.id).count;
-      if (giftList.length !== totalGifts) {
-        throw new Error('DATA_CHANGED');
-      }
-      const ownedCount = db.prepare(
-        'SELECT COUNT(*) AS count FROM gifts WHERE id IN (' +
-        giftList.map(() => '?').join(',') + ') AND event_id IN (SELECT id FROM events WHERE user_id = ?)'
-      ).get(...giftList.map((g) => g.id), req.user.id).count;
-      if (ownedCount !== giftList.length) {
-        throw new Error('DATA_CHANGED');
-      }
+  // 仅更新密码哈希与 DEK 密文（O(1)），不触碰任何礼金记录
+  db.prepare(
+    'UPDATE users SET password = ?, kdf_salt = ?, kdf_iterations = ?, dek_encrypted = ?, token_version = token_version + 1 WHERE id = ?'
+  ).run(hashed, kdfSalt.trim(), iterations, dekEncrypted.trim(), req.user.id);
 
-      // 仅更新当前用户自己事件下的礼金，防止越权篡改他人数据
-      const updateGift = db.prepare(`
-        UPDATE gifts SET encrypted_data = ?, updated_at = datetime('now','localtime')
-        WHERE id = ? AND event_id IN (SELECT id FROM events WHERE user_id = ?)
-      `);
-      for (const gift of giftList) {
-        const result = updateGift.run(gift.encryptedData, gift.id, req.user.id);
-        if (result.changes === 0) {
-          throw new Error('越权访问礼金记录');
-        }
-      }
-      db.prepare('UPDATE users SET password = ?, token_version = token_version + 1 WHERE id = ?').run(hashed, req.user.id);
-    });
-    changePassword();
-    // 改密成功：token_version 已递增，失效用户缓存并吊销旧令牌
-    invalidateUserCache(req.user.id);
-  } catch (error) {
-    // 事务内校验失败：改密期间数据发生变化，事务已回滚，提示刷新后重试
-    if (error.message === 'DATA_CHANGED') {
-      return res.status(400).json({ error: '礼金数据在修改期间发生变化，请刷新后重试' });
-    }
-    // 不暴露内部校验细节（如越权判断），统一返回通用提示；事务已整体回滚
-    return res.status(400).json({ error: '密码修改失败，数据已回滚，请重试' });
-  }
+  // 改密成功：token_version 已递增，失效用户缓存并吊销旧令牌
+  invalidateUserCache(req.user.id);
 
   res.json({ message: '密码修改成功' });
 }));

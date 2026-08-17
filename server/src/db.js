@@ -38,6 +38,9 @@ function initTables() {
       account     TEXT    NOT NULL UNIQUE,
       password    TEXT    NOT NULL,
       token_version INTEGER NOT NULL DEFAULT 0,
+      kdf_salt       TEXT, -- PBKDF2 盐值（信封加密：密码→KEK 派生用）
+      kdf_iterations INTEGER, -- PBKDF2 迭代次数
+      dek_encrypted  TEXT, -- DEK 的密文（Encrypt(DEK, KEK)），礼金数据仅用 DEK 加解密
       created_at  TEXT    NOT NULL DEFAULT (datetime('now','localtime'))
     );
 

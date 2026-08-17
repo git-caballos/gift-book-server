@@ -523,7 +523,6 @@
           }
         },
 
-        // 删除图片缓存
         async deleteImage(key) {
           try {
             if (!this._canUseCache()) {
@@ -612,7 +611,6 @@
 
           this.pendingAlipayFile = null;
           this.pendingWechatFile = null;
-          // 标记是否清空
           this.alipayCleared = false;
           this.wechatCleared = false;
         }
@@ -665,8 +663,6 @@
               }
               this.updateDisplay(data);
               break;
-            case "guest_screen_heartbeat":
-              break;
           }
         }
 
@@ -681,7 +677,8 @@
         }
 
         renderGiftBook(data) {
-          const { gifts, hidePrivacy, typeText } = data;
+          const { hidePrivacy, typeText } = data;
+          const gifts = data.gifts || [];
           // 与主页面"礼簿每页显示条数"保持一致（主页面通过消息携带 itemsPerPage）
           const ITEMS_PER_PAGE = data.itemsPerPage || 12;
           this.giftBookContent.style.setProperty("--gift-grid-columns", ITEMS_PER_PAGE);
@@ -714,10 +711,10 @@
             const amountCell = document.createElement("div");
             amountCell.className = "book-cell amount-cell";
             if (gift) {
-              const amountChinese = gift.amountChinese;
+              const amountChinese = gift.amountChinese || "";
               amountCell.innerHTML = `
                 <div class="amount-chinese ${amountChinese.length > 16 ? "scale" : ""}">${amountChinese}</div>
-                <div class="amount-numeric ${Math.abs(gift.amount).toString().length > 8 ? "scale" : ""}">￥${gift.amount}</div>
+                <div class="amount-numeric ${Math.abs(gift.amount).toString().length > 8 ? "scale" : ""}">￥${escapeHtml(gift.amount ?? "")}</div>
               `;
               if (gift.id === latestGiftId) amountCell.classList.add("latest-entry");
             }
@@ -736,18 +733,25 @@
           const hasContent = !!alipayBlob || !!wechatBlob || (customText && customText.trim() !== "");
           this.applyLayout(settings.layout, hasContent);
 
+          // 替换前保存旧 blob URL，替换后 revoke，避免每次调用都泄漏
+          const oldAlipaySrc = this.qrAlipayImg.src;
+          const oldWechatSrc = this.qrWechatImg.src;
           if (alipayBlob) {
             this.qrAlipayImg.src = URL.createObjectURL(alipayBlob);
+            if (oldAlipaySrc.startsWith("blob:")) URL.revokeObjectURL(oldAlipaySrc);
             this.qrAlipayContainer.style.display = "flex";
           } else {
             this.qrAlipayImg.src = "";
+            if (oldAlipaySrc.startsWith("blob:")) URL.revokeObjectURL(oldAlipaySrc);
             this.qrAlipayContainer.style.display = "none";
           }
           if (wechatBlob) {
             this.qrWechatImg.src = URL.createObjectURL(wechatBlob);
+            if (oldWechatSrc.startsWith("blob:")) URL.revokeObjectURL(oldWechatSrc);
             this.qrWechatContainer.style.display = "flex";
           } else {
             this.qrWechatImg.src = "";
+            if (oldWechatSrc.startsWith("blob:")) URL.revokeObjectURL(oldWechatSrc);
             this.qrWechatContainer.style.display = "none";
           }
           this.customTextDisplay.innerHTML = customText;
@@ -779,6 +783,8 @@
           const wechatBlob = await CacheManager.getImage("wechat-qr");
           const alipaySrc = alipayBlob ? URL.createObjectURL(alipayBlob) : "";
           const wechatSrc = wechatBlob ? URL.createObjectURL(wechatBlob) : "";
+          // 记录弹窗内新建的临时预览 URL，便于后续仅撤销这些 URL（避免误撤销正在展示的收款码）
+          this.modalPreviewUrls = { alipay: alipaySrc, wechat: wechatSrc };
 
           this.modalTitle.textContent = "副屏显示设置";
           this.modalContent.innerHTML = `
@@ -928,13 +934,16 @@
           const preview = document.getElementById(`${type}-preview`);
           const clearBtn = document.getElementById(`${type}-clear-btn`);
           const oldSrc = preview.src;
-          preview.src = URL.createObjectURL(file);
+          const newSrc = URL.createObjectURL(file);
+          preview.src = newSrc;
           preview.classList.remove("hidden");
           clearBtn.classList.remove("hidden");
 
           preview.onload = () => {
-            if (oldSrc.startsWith("blob:")) {
+            // 仅撤销弹窗内新建的临时预览 URL，避免误撤销主界面正在展示的收款码 URL
+            if (oldSrc && this.modalPreviewUrls && this.modalPreviewUrls[type] === oldSrc) {
               URL.revokeObjectURL(oldSrc);
+              this.modalPreviewUrls[type] = newSrc;
             }
           };
         }

@@ -41,6 +41,33 @@ const giftService = {
     return toDTO(db.prepare('SELECT * FROM gifts WHERE id = ?').get(result.lastInsertRowid));
   },
 
+  /** 批量新增礼金（单事务写入，替代逐条请求；任一条失败整体回滚）
+   * @param {Array<{encryptedData: string, guestLevelWeight?: number, levelUpdateTime?: number}>} gifts
+   * @returns {number|null} 实际插入条数；事件不属于该用户时返回 null
+   */
+  createBatch(eventId, userId, gifts) {
+    const db = getDb();
+    if (!belongsToUser(eventId, userId)) return null;
+    const insert = db.prepare(`
+      INSERT INTO gifts (event_id, guest_level_weight, level_update_time, encrypted_data)
+      VALUES (?, ?, ?, ?)
+    `);
+    const runAll = db.transaction((rows) => {
+      let imported = 0;
+      for (const g of rows) {
+        insert.run(
+          eventId,
+          g.guestLevelWeight ?? 0,
+          g.levelUpdateTime ?? 0,
+          g.encryptedData,
+        );
+        imported++;
+      }
+      return imported;
+    });
+    return runAll(gifts);
+  },
+
   /** 更新礼金记录（encryptedData 提供时更新密文） */
   update(giftId, eventId, userId, updates) {
     const db = getDb();
@@ -74,6 +101,22 @@ const giftService = {
       'DELETE FROM gifts WHERE id = ? AND event_id = ?'
     ).run(giftId, eventId);
     return result.changes > 0;
+  },
+
+  /** 批量删除礼金（单事务写入，替代逐条请求；重复 id 自动去重）
+   * @param {number[]} giftIds
+   * @returns {number|null} 实际删除条数；事件不属于该用户时返回 null
+   */
+  removeBatch(eventId, userId, giftIds) {
+    const db = getDb();
+    if (!belongsToUser(eventId, userId)) return null;
+    const ids = [...new Set(giftIds)];
+    if (ids.length === 0) return 0;
+    // better-sqlite3 需要显式占位符，IN 列表用动态占位符，不直接拼值
+    const placeholders = ids.map(() => '?').join(',');
+    const del = db.prepare(`DELETE FROM gifts WHERE event_id = ? AND id IN (${placeholders})`);
+    const runAll = db.transaction((list) => del.run(eventId, ...list).changes);
+    return runAll(ids);
   },
 };
 

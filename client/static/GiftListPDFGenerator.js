@@ -6,7 +6,6 @@ class GiftRegistryPDF {
      * 创建一个 PDF 生成器实例。
      */
     constructor(options) {
-        // 1. 默认配置合并
         const defaults = {
             letterSpacing: 4,
             title: '礼金簿',
@@ -42,6 +41,8 @@ class GiftRegistryPDF {
 
 
     _applyStyleConfig() {
+        // 钳制每页条数：≤0 或非数字会让页数计算为 Infinity 导致死循环
+        this.options.itemsPerPage = Math.max(1, Number(this.options.itemsPerPage) || 1);
         const overrides = this.options.giftBookStyles || {};
 
         // 辅助函数：解析数字，无效则返回默认值
@@ -56,7 +57,6 @@ class GiftRegistryPDF {
             color: getCol(overrides[key]?.color, defaultColor)
         });
 
-        // 1. 生成各部分样式
         this.styles = {
             name:      resolveStyle('name', 20, '#333333'),
             label:     resolveStyle('label', 20, '#cc0000'),
@@ -69,7 +69,6 @@ class GiftRegistryPDF {
             }
         };
 
-        // 2. 定义常用颜色画笔（复用 rgb 对象，避免重复实例化）
         this.colors = {
             red: this.styles.pageInfo.themeColor,
             black: this.styles.pageInfo.baseColor,
@@ -83,7 +82,6 @@ class GiftRegistryPDF {
      * 优化点：使用正则简化逻辑，支持 #RGB, #RRGGBB, rgb() 格式
      */
     _parseColor(input) {
-        // 如果已经是颜色对象则直接返回
         if (typeof input === 'object' && input !== null) return input;
         
         const str = String(input || '').trim();
@@ -157,8 +155,8 @@ class GiftRegistryPDF {
     }
 
     _processData(data) {
-        const validData = data.filter(item => !item.abolished);
-        const grandTotal = validData.reduce((sum, item) => sum + item.amount, 0);
+        const validData = data.filter(item => item && !item.abolished);
+        const grandTotal = validData.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
         // 统计、附录、页数一律基于有效记录（不含作废），与打印引擎口径一致
         const remarks = validData
             .map((item, index) => ({
@@ -172,7 +170,7 @@ class GiftRegistryPDF {
             const type = item.type || '其他';
             if (!acc[type]) acc[type] = { count: 0, total: 0 };
             acc[type].count++;
-            acc[type].total += item.amount;
+            acc[type].total += Number(item.amount) || 0;
             return acc;
         }, {});
 
@@ -220,7 +218,7 @@ class GiftRegistryPDF {
             const pageData = data.slice(p * this.options.itemsPerPage, (p + 1) * this.options.itemsPerPage);
             pageData.forEach((item, i) => {
                 const colX = margin.left + i * colWidth;
-                const name = item.name.length === 2 ? item.name[0] + String.fromCharCode(0x3000) + item.name[1] : item.name;
+                const name = (item.name || "").length === 2 ? item.name[0] + String.fromCharCode(0x3000) + item.name[1] : item.name;
                 this._drawText(page, name, fonts.mainFont, {
                     x: colX, y: line2Y, cellWidth: colWidth, cellHeight: nameHeight,
                     initialFontSize: nameStyle.fontSize, minFontSize: 8, color: nameStyle.color, isVertical: true
@@ -233,12 +231,12 @@ class GiftRegistryPDF {
                     x: colX, y: margin.bottom + numericAmountHeight, cellWidth: colWidth, cellHeight: chineseAmountHeight,
                     initialFontSize: amountStyle.fontSize, minFontSize: 8, color: amountStyle.color, isVertical: true
                 });
-                this._drawText(page, String.fromCharCode(0x00A5) + item.amount, fonts.formalFont, {
+                this._drawText(page, String.fromCharCode(0x00A5) + (Number(item.amount) || 0), fonts.formalFont, {
                     x: colX, y: margin.bottom + 5, cellWidth: colWidth, cellHeight: numericAmountHeight,
                     initialFontSize: 12, minFontSize: 6, color: numericColor, isVertical: false
                 });
             });
-            const pageSubtotal = pageData.reduce((sum, item) => sum + item.amount, 0);
+            const pageSubtotal = pageData.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
             let pageInfo = `第 ${p + 1} 页 / 共 ${mainContentTotalPages} 页`;
             if (this.options.partIndex && this.options.totalParts) {
                 pageInfo += `( P${this.options.partIndex}/P${this.options.totalParts} )`;
@@ -499,7 +497,7 @@ class GiftRegistryPDF {
 
         const MAX_COLS = 3;
         const { letterSpacing } = this.options;
-        const chars = [...text];
+        const chars = [...(text || "")];
         if (chars.length === 0) return;
 
         const cellWidth90 = cellWidth * 0.9;
@@ -556,7 +554,8 @@ class GiftRegistryPDF {
 
         if (finalFontSize < minFontSize) finalFontSize = minFontSize;
 
-        const charsPerColForDrawing = adaptiveMaxCharsPerCol;
+        // 按实际列数重新分配每列字符数，避免超长文本静默截断
+        const charsPerColForDrawing = Math.ceil(chars.length / finalColCount);
         const blockHeight = calcHeight(finalCharsPerColForHeight, finalFontSize);
         const blockWidth = calcWidth(finalColCount, finalFontSize);
         const blockLeft = x + (cellWidth - blockWidth) / 2;
