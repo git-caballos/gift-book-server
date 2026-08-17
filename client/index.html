@@ -2862,7 +2862,8 @@
               app.ui.showNotification("解密失败，密码错误或文件已损坏。", "error");
               return null;
             }
-            return { payload: decrypted, backupPassword };
+            const payload = typeof decrypted === "string" ? JSON.parse(decrypted) : decrypted;
+            return { payload, backupPassword };
           } catch (error) {
             console.error("读取备份失败:", error);
             app.ui.showNotification("读取失败，文件格式可能无效或已损坏。", "error");
@@ -3149,7 +3150,7 @@
         async ensurePrintPreferences() {
           const app = this.app;
           if (!app.currentEvent) return false;
-          const cacheKey = `printSetupShown_${app.currentEvent.id}`;
+          const cacheKey = `printSetupShown_v2_${app.currentEvent.id}`;
           if (sessionStorage.getItem(cacheKey)) return true;
 
           return new Promise((resolve) => {

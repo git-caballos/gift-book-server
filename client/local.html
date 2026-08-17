@@ -2567,8 +2567,8 @@
               gifts: sanitizedGifts,
             };
 
-            // 加密整个 payload
-            const encryptedPayloadString = CryptoService.encrypt(payload, app.currentPassword);
+            // 加密整个 payload（与原版一致：双重序列化，保证原版导入可解析）
+            const encryptedPayloadString = CryptoService.encrypt(JSON.stringify(payload), app.currentPassword);
 
             // 生成文件名
             const safeName = (app.currentEvent.name || "event").replace(/[\\/:*?"<>|]/g, "_");
@@ -3062,7 +3062,7 @@
         async ensurePrintPreferences() {
           const app = this.app;
           if (!app.currentEvent) return false;
-          const cacheKey = `printSetupShown_${app.currentEvent.id}`;
+          const cacheKey = `printSetupShown_v2_${app.currentEvent.id}`;
           if (sessionStorage.getItem(cacheKey)) return true;
 
           return new Promise((resolve) => {
